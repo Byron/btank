@@ -1,0 +1,17 @@
+site_name: btank
+site_url: https://byron.github.io/btank
+site_description: Marry shotgun toolkit with bcore
+
+repo_url: https://github.com/Byron/btank
+dev_addr: 127.0.0.1:9990
+
+docs_dir: ../../src/md
+site_dir: ../../doc/mkdocs/html
+
+pages:
+- ['index.md', 'Home']
+- ['research.md', 'Research', 'Random Thoughts']
+- ['license.md', 'About', 'License']
+
+theme: yeti
+copyright: Copyright &copy; 2014, <a href="https://www.linkedin.com/in/sebastianthiel">Sebastian Thiel & Contributors</a>.

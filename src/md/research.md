@@ -30,3 +30,4 @@
 * Make it use kvstore
 * Make it us bsemantic
 * use own sg connection implementation (from bshotgun)
+* make it use bprocess when starting applications, especially the shotgun plugin to get browser support
