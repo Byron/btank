@@ -130,6 +130,9 @@
         <li class="main "><a href="#goals-at-first-glimpse">Goals at first glimpse</a></li>
         
     
+        <li class="main "><a href="#configuration-file-rampage">Configuration File Rampage</a></li>
+        
+    
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
@@ -167,6 +170,8 @@
 <li>Docs are separated from the code repositories. This means, they easily get out of sync with what's implemented, as the developer has to break out of the normal dev-environment. What's worse is that contributors can't make fixes while they are reading.</li>
 <li>it looks very expensive to use frameworks, as they are instantiated and loaded just for you. Even though it might be good for avoiding shared state and components affecting each other, I doubt it's really what you want.</li>
 <li>(plenty of code I would want to override is on module level, which forces me to monkey patch every single function. If it would be a class level method, only the class would need monkey patching, or instantiation. The latter would be the desired way.) - I don't think I will override framework loading.</li>
+<li>tank commands are well documented, but non-standard (e.g. no usage)</li>
+<li>environment configuration files are non-sparse, which means a lot of text that just says 'default' as value. Whenever someone adds a new attribute/property in the engine/app configuration, your configuration files will not see it anyway, and thus be 'sparse' unintentionally. This leaves you with unnecessarily verbose configuration that I dislike already.</li>
 </ul>
 <h2 id="tank-whats-good">Tank - What’s good</h2>
 <ul>
@@ -201,6 +206,7 @@
 <li>core hooks allow to choose environments, or make fundamental business logic decisions (e.g. <em>PIPELINE_CONFIG/core/hooks/pick_environment.py</em>)</li>
 <li>tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.</li>
 <li>'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus</li>
+<li>pipeline configurations are entities in shotgun, created by the API, pointing to the tank location on a per-project basis. This is where sandboxes are setup. They might support environment variables.</li>
 </ul>
 <h2 id="goals-at-first-glimpse">Goals at first glimpse</h2>
 <ul>
@@ -211,6 +217,8 @@
 <li>use own sg connection implementation (from bshotgun)</li>
 <li>make it use bprocess when starting applications, especially the shotgun plugin to get browser support</li>
 </ul>
+<h2 id="configuration-file-rampage">Configuration File Rampage</h2>
+<p>TODO: Write up about the mess</p>
 </div>
         </div>
 
