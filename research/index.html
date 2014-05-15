@@ -115,7 +115,10 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#tank-whats-bad">Tank - What’s bad</a></li>
+        <li class="main active"><a href="#tank-whats-sinful">Tank - What's sinful</a></li>
+        
+    
+        <li class="main "><a href="#tank-whats-not-so-good">Tank - What’s not so good</a></li>
         
     
         <li class="main "><a href="#tank-whats-good">Tank - What’s good</a></li>
@@ -131,34 +134,49 @@
 </div></div>
             <div class="col-md-9" role="main">
 
-<h2 id="tank-whats-bad">Tank - What’s bad</h2>
+<h2 id="tank-whats-sinful">Tank - What's sinful</h2>
+<ul>
+<li>Main app's bundle logic with GUI, making it impossible to reproduce their logic in non-gui mode. The latter is neat for automation.</li>
+</ul>
+<h2 id="tank-whats-not-so-good">Tank - What’s not so good</h2>
 <ul>
 <li>Upgrade config files on schema change<ul>
 <li>Even though I think there should be viable defaults, this is not always possible. Generally one should refrain from introducing changes that break an application if a piece of information doesn't exist. Instead, the application should deal with it. It's good to have a facility that can handle these updates though.</li>
 </ul>
 </li>
-<li>Redundant per entity type configuration (aka environments)<ul>
+<li>Redundant per context configuration (aka environments)<ul>
 <li>This seems like a workaround to a 'single-file' configuration system paradigm.</li>
+<li>you are forced to repeat yourself when configuring apps (-maintainability, +complexity)</li>
 </ul>
 </li>
 <li>Tk-core is special, and typically shared</li>
 <li>path - asset association is stored in a shared sqlite database (known for inconsistency on network shares)</li>
 <li>path template system configuration is redundant, and inflexible (proof)</li>
 <li>path inference needs to know the ‘type’ of path you look at</li>
-<li>capitalisation in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps)</li>
+<li>capitalization in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps)</li>
+<li>app-configuration is one per file. Overrides are done redundantly per environment. It's a general issue though if no central cascading tree is used (like kvstore)</li>
+<li>good: versions in yaml have ‘v’ prefix to make sure they become string, not float, even without quoting them. Actually, it's not done like that in real configuration files, so it seems redundant actually.</li>
+<li>Even hooks are defined in yaml, which is degenerating what can actually be done in a programming language. When extending implementation, its more powerful to use language facilities (i.e. types, delegate-patterns, events, plugin systems).</li>
+<li>Non test-driven development is encouraged by providing means to reload code while the application is running. This is probably what led to tanks major sin, see top of the document.</li>
 </ul>
 <h2 id="tank-whats-good">Tank - What’s good</h2>
 <ul>
 <li>docs</li>
-<li>versions in yaml have ‘v’ prefix to make sure they become string, not float, even without quoting them</li>
 <li>tk-core by now has a good test suite !</li>
+<li>TDs can reload code in-app.</li>
+<li>Provided the 'semantic configuration file names' feature is dynamic, configuration selection by context is something <code>bcore</code> doesn't do right now. This runtime feature could be implemented easily though, provided we have context information. Done in the 'pick_environment' hook - the equivalent would be done in a custom Application (for runtime changes) or a delegate for pre-runtime changes. The latter is more powerful as the entire program configuration can be adjusted properly.</li>
+<li>Context can dynamically change, see 'Work Files App', or 'pick_environment' hook</li>
+<li>yaml-configurable schemas. bapp could make that possible, after all it's just a KeyValueStoreSchema from settings</li>
+<li>path template validation. <code>bsemantic</code> does this in test-cases, but something similar must exist to make it failsafe/easy to use. To not be forced to put everything into yaml, the system could collect plugins that support a certain interface, and call their generators to see if a particular context can work.</li>
+<li>different 'pipeline configurations' allow to do sandboxes/local testing</li>
+<li>can be started from existing pipelines (which was expected)</li>
 </ul>
 <h2 id="interesting-for-evaluation">Interesting - for evaluation</h2>
 <ul>
 <li>Direct and deferred path creation (once in shotgun, once at app start ??)</li>
 <li>path inference (obtain fields from path)</li>
 <li>context keeps asset association/shotgun data link</li>
-<li>department/process related app configurations are determined as such, whereas bcore uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called <em>environment</em></li>
+<li>department/process related app configurations are determined as such, whereas <code>bcore</code> uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called <em>environment</em></li>
 <li>core-&gt; engines-&gt; apps -&gt; hooks<ul>
 <li>engines are application specific, and seem to be brought up by core</li>
 <li>apps are engine plugins, hooks are app plugins</li>
@@ -166,12 +184,15 @@
 </li>
 <li>app location configuration parameter should allow it to be local (but only so if kvstore resolution is used). Their configuration could in fact be coming from a kvstore, schemas will not overlap.</li>
 <li>core hooks allow to choose environments, or make fundamental business logic decisions (e.g. <em>PIPELINE_CONFIG/core/hooks/pick_environment.py</em>)</li>
+<li>tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.</li>
+<li>'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus</li>
 </ul>
 <h2 id="goals-at-first-glimpse">Goals at first glimpse</h2>
 <ul>
-<li>Make it use kvstore</li>
+<li>Make it use kvstore (if configuration turns out to be too redundant, especially with paths)</li>
 <li>Make it us bsemantic</li>
 <li>use own sg connection implementation (from bshotgun)</li>
+<li>make it use bprocess when starting applications, especially the shotgun plugin to get browser support</li>
 </ul>
 </div>
         </div>
