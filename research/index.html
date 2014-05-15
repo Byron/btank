@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://byron.github.io/btank/research/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+
+        <title>Random Thoughts - btank</title>
+
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link href="../css/prettify-1.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="..">btank</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Research <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li class="active">
+                            <a href="./">Random Thoughts</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../license/">License</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                
+                <li >
+                    <a rel="next" href="..">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../license/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="https://github.com/Byron/btank">
+                        
+                            <i class="fa fa-github"></i>
+                        
+                        GitHub
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#tank-whats-bad">Tank - What’s bad</a></li>
+        
+    
+        <li class="main "><a href="#tank-whats-good">Tank - What’s good</a></li>
+        
+    
+        <li class="main "><a href="#interesting-for-evaluation">Interesting - for evaluation</a></li>
+        
+    
+        <li class="main "><a href="#goals-at-first-glimpse">Goals at first glimpse</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h2 id="tank-whats-bad">Tank - What’s bad</h2>
+<ul>
+<li>Upgrade config files on schema change<ul>
+<li>Even though I think there should be viable defaults, this is not always possible. Generally one should refrain from introducing changes that break an application if a piece of information doesn't exist. Instead, the application should deal with it. It's good to have a facility that can handle these updates though.</li>
+</ul>
+</li>
+<li>Redundant per entity type configuration (aka environments)<ul>
+<li>This seems like a workaround to a 'single-file' configuration system paradigm.</li>
+</ul>
+</li>
+<li>Tk-core is special, and typically shared</li>
+<li>path - asset association is stored in a shared sqlite database (known for inconsistency on network shares)</li>
+<li>path template system configuration is redundant, and inflexible (proof)</li>
+<li>path inference needs to know the ‘type’ of path you look at</li>
+<li>capitalisation in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps)</li>
+</ul>
+<h2 id="tank-whats-good">Tank - What’s good</h2>
+<ul>
+<li>docs</li>
+<li>versions in yaml have ‘v’ prefix to make sure they become string, not float, even without quoting them</li>
+<li>tk-core by now has a good test suite !</li>
+</ul>
+<h2 id="interesting-for-evaluation">Interesting - for evaluation</h2>
+<ul>
+<li>Direct and deferred path creation (once in shotgun, once at app start ??)</li>
+<li>path inference (obtain fields from path)</li>
+<li>context keeps asset association/shotgun data link</li>
+<li>department/process related app configurations are determined as such, whereas bcore uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called <em>environment</em></li>
+<li>core-&gt; engines-&gt; apps -&gt; hooks<ul>
+<li>engines are application specific, and seem to be brought up by core</li>
+<li>apps are engine plugins, hooks are app plugins</li>
+</ul>
+</li>
+<li>app location configuration parameter should allow it to be local (but only so if kvstore resolution is used). Their configuration could in fact be coming from a kvstore, schemas will not overlap.</li>
+<li>core hooks allow to choose environments, or make fundamental business logic decisions (e.g. <em>PIPELINE_CONFIG/core/hooks/pick_environment.py</em>)</li>
+</ul>
+<h2 id="goals-at-first-glimpse">Goals at first glimpse</h2>
+<ul>
+<li>Make it use kvstore</li>
+<li>Make it us bsemantic</li>
+<li>use own sg connection implementation (from bshotgun)</li>
+</ul>
+</div>
+        </div>
+
+        
+
+        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/prettify-1.0.min.js"></script>
+        <script src="../js/base.js"></script>
+    </body>
+</html>
