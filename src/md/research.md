@@ -25,6 +25,8 @@
 * Docs are separated from the code repositories. This means, they easily get out of sync with what's implemented, as the developer has to break out of the normal dev-environment. What's worse is that contributors can't make fixes while they are reading.
 * it looks very expensive to use frameworks, as they are instantiated and loaded just for you. Even though it might be good for avoiding shared state and components affecting each other, I doubt it's really what you want.
 * (plenty of code I would want to override is on module level, which forces me to monkey patch every single function. If it would be a class level method, only the class would need monkey patching, or instantiation. The latter would be the desired way.) - I don't think I will override framework loading.
+* tank commands are well documented, but non-standard (e.g. no usage)
+* environment configuration files are non-sparse, which means a lot of text that just says 'default' as value. Whenever someone adds a new attribute/property in the engine/app configuration, your configuration files will not see it anyway, and thus be 'sparse' unintentionally. This leaves you with unnecessarily verbose configuration that I dislike already.
 
 ## Tank - What’s good
 * docs
@@ -55,6 +57,7 @@
 * core hooks allow to choose environments, or make fundamental business logic decisions (e.g. *PIPELINE_CONFIG/core/hooks/pick_environment.py*)
 * tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.
 * 'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus
+* pipeline configurations are entities in shotgun, created by the API, pointing to the tank location on a per-project basis. This is where sandboxes are setup. They might support environment variables.
 
 ## Goals at first glimpse
 * Install it within the standard dependencies assembly, initially there might be no way around the redundant configuration issue. After all, tank must be able to find its manifest files.
@@ -63,3 +66,8 @@
 * Make it use bsemantic
 * use own sg connection implementation (from bshotgun)
 * make it use bprocess when starting applications, especially the shotgun plugin to get browser support
+
+
+## Configuration File Rampage
+
+TODO: Write up about the mess
