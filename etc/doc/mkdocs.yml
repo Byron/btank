@@ -10,7 +10,7 @@ site_dir: ../../doc/mkdocs/html
 
 pages:
 - ['index.md', 'Home']
-- ['research.md', 'Research', 'Random Thoughts']
+- ['research.md', 'Research', 'About Tank']
 - ['license.md', 'About', 'License']
 
 theme: yeti
