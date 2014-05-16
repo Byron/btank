@@ -132,9 +132,11 @@
             <li><a href="#engines">Engines</a></li>
         
     
-        <li class="main "><a href="#insights-about-the-configuration">Insights about the configuration</a></li>
+        <li class="main "><a href="#insights">Insights</a></li>
         
-            <li><a href="#configuration-file-rampage">Configuration File Rampage</a></li>
+            <li><a href="#configuration-files">Configuration Files</a></li>
+        
+            <li><a href="#how-shotgun-web-integrates-with-tank">How Shotgun Web integrates with Tank</a></li>
         
             <li><a href="#tank-context-and-how-engines-start-up">Tank Context and how engines start up</a></li>
         
@@ -200,6 +202,7 @@
 <li>it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)</li>
 </ul>
 </li>
+<li><strong>sinful</strong> Tank is using a <code>path_cache.db</code>, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to <a href="http://sqlite.org/faq.html#q5">fail in concurrent situations</a>.</li>
 </ul>
 <h2 id="configuration-system">Configuration System</h2>
 <ul>
@@ -248,10 +251,57 @@
 <ul>
 <li>Not all engines support <code>TANK_FILE_TO_OPEN</code>, they simply don't implement it, but delete the variable from the environment.</li>
 </ul>
-<h1 id="insights-about-the-configuration">Insights about the configuration</h1>
-<h2 id="configuration-file-rampage">Configuration File Rampage</h2>
-<p>It looks like tank is literally spitting them everywhere. Generally we differentiate between <code>studio</code>, <code>project</code> and <code>localized</code> configuraiton types.</p>
-<p><strong>TODO</strong></p>
+<h1 id="insights">Insights</h1>
+<h2 id="configuration-files">Configuration Files</h2>
+<p>It looks like tank is literally spitting them everywhere. Generally we differentiate between <code>studio</code>, <code>project</code> and <code>localized</code> configuration types.</p>
+<h2 id="how-shotgun-web-integrates-with-tank">How Shotgun Web integrates with Tank</h2>
+<p>The shotgun plugin is able to execute files, and that's it. This capability is used to launch the project-specific tank executable. This one is known thanks to the 'primary' (or whichever) PipelineConfiguration entity associated with the project.</p>
+<p>This command is a boostrapper which loads tk-core and uses it for evaluating the configuration, returning values interpreted by java script (?).</p>
+<p>Those are typical invocation the gui frontend does, including their return values</p>
+<pre class="prettyprint well"><code class="bash">${config}/tank shotgun_cache_actions Asset shotgun_mac_asset.txt
+# writes the specified text file - apparently configuration loading is slow enough to require
+# a speed up. This is something to think about when bringing in own tools,  
+# who should be fast too
+${config}/tank shotgun_get_actions shotgun_mac_asset.txt shotgun_asset.yml
+# Runs in 0.017 seconds, bash only
+&gt; launch_nuke$Launch Nuke$$False
+&gt; show_in_filesystem$Show in File System$$True
+&gt; launch_photoshop$Launch Photoshop$$False
+&gt; preview_folders$Preview Create Folders$$True
+&gt; create_folders$Create Folders$$True
+&gt; launch_screeningroom$Show in Screening Room$$False
+&gt; launch_maya$Launch Maya$$False
+${config}/tank shotgun_run_action launch_nuke Task 2517
+# launches nuke, after redirecting the call to tank_cmd_login.sh, which is similar to tank_cmd.sh
+# but uses a different shebang. Copy-past at its finest.
+# In the end it launches tank like so (after setting the PYTHONPATH accordingly)
+# /System/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python [...]/dependencies/lib/tank/studio/install/core/scripts/tank_cmd.py [...]/dependencies/lib/tank/studio shotgun_run_action launch_maya Task 2517 --pc=[...]/PROJECT/etc/tank
+# It is refusing to use the CWD for anything (as a native context for instance)
+# This command takes exactly 7s due to various shotgun queries, until it finally launches nuke
+</code></pre>
+
+<p>Conclusions are</p>
+<ul>
+<li>the project tank executable needs to be as fast as possible<ul>
+<li>It blocks the web-frontend, which waits with drawing until command returns.</li>
+<li>If our own wrapper can easily be integrated by adjusting the studio installation's tank command at <em>install/core/scripts/tank_cmd.py</em></li>
+</ul>
+</li>
+<li>The python command itself is extremely slow at launching applications, probably due to various shotgun queries it does in the process.<ul>
+<li>It takes quite unacceptable 7s in my tests to commence launching any application.<ul>
+<li>tank itself is initialized after 0.22s (<code>tk = tank.tank_from_path(pipeline_config_root)</code>)</li>
+<li>a context is available (from entity) after 0.8s (<code>ctx = tk.context_from_entity(entity_type, entity_ids[0])</code>)</li>
+<li>an engine is available after 2.7s (<code>e = engine.start_shotgun_engine(tk, entity_type, ctx)</code>)</li>
+<li>executes the actual command, which returns after a whopping 7s (<code>e.execute_command(action_name)</code>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>On the setup I work with (sluggish smb-share, mounted on OSX), the wrapper takes 3s to launch anything, which brings overall application startup time to 10s<ul>
+<li>However, I believe that the information that ends up in the application is nearly entirely known, which makes filling out the data easy. Combined with an sql read cache, startup can be done in 3.5s or less, with the bcore in charge of course.</li>
+</ul>
+</li>
+</ul>
 <h2 id="tank-context-and-how-engines-start-up">Tank Context and how engines start up</h2>
 <p>In order to bring contextual information to the application, tank can use various ways. Generally, it can do it by path, and by entity.</p>
 <p>When launching something from the built-in launchers, the context is set using a pickled dict, containing entity data.</p>
