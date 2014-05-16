@@ -49,6 +49,7 @@
 + multi-root configuration is possible, and easy to configure, but verbose as everything.
 + It's possible to centralize configuration while maintaining the ability to make overrides by using configuration includes
     + it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)
+- **sinful** Tank is using a `path_cache.db`, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to [fail in concurrent situations](http://sqlite.org/faq.html#q5).
 
 
 ## Configuration System
@@ -97,13 +98,57 @@
 * Not all engines support `TANK_FILE_TO_OPEN`, they simply don't implement it, but delete the variable from the environment.
 
 
-# Insights about the configuration
+# Insights
 
-## Configuration File Rampage
+## Configuration Files
 
-It looks like tank is literally spitting them everywhere. Generally we differentiate between `studio`, `project` and `localized` configuraiton types.
+It looks like tank is literally spitting them everywhere. Generally we differentiate between `studio`, `project` and `localized` configuration types.
 
-**TODO**
+
+## How Shotgun Web integrates with Tank
+
+The shotgun plugin is able to execute files, and that's it. This capability is used to launch the project-specific tank executable. This one is known thanks to the 'primary' (or whichever) PipelineConfiguration entity associated with the project.
+
+This command is a boostrapper which loads tk-core and uses it for evaluating the configuration, returning values interpreted by java script (?).
+
+Those are typical invocation the gui frontend does, including their return values
+
+```bash
+${config}/tank shotgun_cache_actions Asset shotgun_mac_asset.txt
+# writes the specified text file - apparently configuration loading is slow enough to require
+# a speed up. This is something to think about when bringing in own tools,  
+# who should be fast too
+${config}/tank shotgun_get_actions shotgun_mac_asset.txt shotgun_asset.yml
+# Runs in 0.017 seconds, bash only
+> launch_nuke$Launch Nuke$$False
+> show_in_filesystem$Show in File System$$True
+> launch_photoshop$Launch Photoshop$$False
+> preview_folders$Preview Create Folders$$True
+> create_folders$Create Folders$$True
+> launch_screeningroom$Show in Screening Room$$False
+> launch_maya$Launch Maya$$False
+${config}/tank shotgun_run_action launch_nuke Task 2517
+# launches nuke, after redirecting the call to tank_cmd_login.sh, which is similar to tank_cmd.sh
+# but uses a different shebang. Copy-past at its finest.
+# In the end it launches tank like so (after setting the PYTHONPATH accordingly)
+# /System/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python [...]/dependencies/lib/tank/studio/install/core/scripts/tank_cmd.py [...]/dependencies/lib/tank/studio shotgun_run_action launch_maya Task 2517 --pc=[...]/PROJECT/etc/tank
+# It is refusing to use the CWD for anything (as a native context for instance)
+# This command takes exactly 7s due to various shotgun queries, until it finally launches nuke
+```
+Conclusions are
+
+* the project tank executable needs to be as fast as possible
+    - It blocks the web-frontend, which waits with drawing until command returns.
+    - If our own wrapper can easily be integrated by adjusting the studio installation's tank command at _install/core/scripts/tank_cmd.py_
+* The python command itself is extremely slow at launching applications, probably due to various shotgun queries it does in the process.
+    - It takes quite unacceptable 7s in my tests to commence launching any application.
+        + tank itself is initialized after 0.22s (`tk = tank.tank_from_path(pipeline_config_root)`)
+        + a context is available (from entity) after 0.8s (`ctx = tk.context_from_entity(entity_type, entity_ids[0])`)
+        + an engine is available after 2.7s (`e = engine.start_shotgun_engine(tk, entity_type, ctx)`)
+        + executes the actual command, which returns after a whopping 7s (`e.execute_command(action_name)`)
+* On the setup I work with (sluggish smb-share, mounted on OSX), the wrapper takes 3s to launch anything, which brings overall application startup time to 10s
+    - However, I believe that the information that ends up in the application is nearly entirely known, which makes filling out the data easy. Combined with an sql read cache, startup can be done in 3.5s or less, with the bcore in charge of course.
+
 
 ## Tank Context and how engines start up
 
@@ -151,6 +196,7 @@ When launching something from the built-in launchers, the context is set using a
 + separate studio configuration from installation location, maybe just using symlinks
 * Make it use kvstore (if configuration turns out to be too redundant, especially with paths)
 * Make it use bsemantic
+
 * use own sg connection implementation (from bshotgun)
 * make it use bprocess when starting applications, especially the shotgun plugin to get browser support
 

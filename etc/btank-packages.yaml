@@ -1,0 +1,35 @@
+packages:
+  ###############
+  tank-core: ###
+  #############
+    # trees: to be set by parent assembly
+    name: Tank Installation
+    description: |
+      The installation you get when installing tank the first time. It should contain 
+      all the apps and engines and engines you want to use in projects.
+    environment:
+      variables:
+        PYTHONPATH: 'install/core/python'
+        # allows to refer to the tank tree from other packages
+        TANK_TREE: 'install/core/python'
+
+  ######################
+  tank-engine-maya: ###
+  ####################
+    name: Tank Engine for Maya
+    description: |
+      Configures tank to know the maya engine should be initialized.
+    environment:
+      variables:
+        TANK_ENGINE: tk-maya
+
+  ###########
+  btank: ###
+  #########
+    name: BCore Tank Integration
+    description: |
+      Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
+      Or in other words: Advantages of bcore with the gui features of tank.
+
+
+
