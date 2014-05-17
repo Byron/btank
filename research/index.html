@@ -146,6 +146,19 @@
         <li class="main "><a href="#interesting-for-evaluation">Interesting - for evaluation</a></li>
         
     
+        <li class="main "><a href="#problems-and-solutions">Problems and Solutions</a></li>
+        
+            <li><a href="#tank-as-part-of-an-assembly">Tank as part of an assembly</a></li>
+        
+            <li><a href="#studio-and-project-configuration">Studio and Project Configuration</a></li>
+        
+            <li><a href="#process-launching">Process Launching</a></li>
+        
+            <li><a href="#templates-and-folder-creation">Templates and Folder Creation</a></li>
+        
+            <li><a href="#automation-using-shotgun-events">Automation using shotgun-events</a></li>
+        
+    
         <li class="main "><a href="#btank-and-tank">BTank and Tank</a></li>
         
     
@@ -393,7 +406,7 @@ TANK_STUDIO/install/engines    /app_store/tk-maya     /v0.4.1
 </ul>
 <h3 id="shotgun-configuration">SHOTGUN Configuration</h3>
 <p>The <code>PipelineConfiguration</code> entity contains the project's <code>TANK_PROJECT</code> root paths for all platforms, and allows the shotgun web gui to find the <code>tank</code> executable at <code>TANK_PROJECT/tank</code> to obtain tank related information and work with the file system.</p>
-<p>In conjunction with the shotgun plugin (formerly java plugin), this allows shotgun to execute arbitrary files and obtain their standard output (at least) and exit code. This is used to populate right-click menues with configured launchers, and to execute tank commands on the user's machine.</p>
+<p>In conjunction with the shotgun plugin (formerly java plugin), this allows shotgun to execute arbitrary files and obtain their standard output, standard error and exit code. This is used to populate right-click menues with configured launchers, and to execute tank commands on the user's machine.</p>
 <h2 id="how-shotgun-web-integrates-with-tank">How Shotgun Web integrates with Tank</h2>
 <p>The shotgun plugin is able to execute files, and that's it. This capability is used to launch the project-specific tank executable. This one is known thanks to the 'primary' (or whichever) PipelineConfiguration entity associated with the project.</p>
 <p>This command is a boostrapper which loads tk-core and uses it for evaluating the configuration, returning values interpreted by java script (?).</p>
@@ -493,6 +506,88 @@ ${config}/tank shotgun_run_action launch_nuke Task 2517
 <li><code>sg_connection</code> studio hook in config/core allows to return custom connection types ... oh actually it's adjusting the connection settings - crowed too soon.</li>
 </ul>
 <p><img alt="under construction" src="https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png" /></p>
+<h1 id="problems-and-solutions">Problems and Solutions</h1>
+<p>To aid defining a course of action, it's best to state the problems showing after first evaluation, in order of their perceived gravity.</p>
+<p>Solutions should be given in order of their ascending cost - let's try to find cheap solutions for heavy problems.</p>
+<h2 id="tank-as-part-of-an-assembly">Tank as part of an assembly</h2>
+<p>Tank is meant to be a standalone, and as self-contained as possible. Yet it should be port of an existing software repository and integrate with it. It's auto-update features and self-managing nature must be well understood to determine a good place and way of handling it.</p>
+<h3 id="solutions">Solutions</h3>
+<ol>
+<li>Treat tank as self-managed unit and integrate it as a whole<ul>
+<li>All tank features for BUNDLE management are preserved, pulling on those that are required by a particular project configuration.The TANK_STUDIO location is tracked as a whole.</li>
+<li><code>tk-core</code> may exist only in one version for the entire studio, which may be a risk if not handled correctly.</li>
+<li>requires no additional or special treatment, except for a few git commands.</li>
+</ul>
+</li>
+<li>As 1., but track multiple <code>tk-core</code> installations<ul>
+<li>requires a tight bprocess override to work, as tk-core must be put in the path accordingly.</li>
+<li>possibly requires dynamic adjustment of configuration files tank expects to read to work</li>
+<li>Allows to choose any tank core version per project, and keeps them available forever in exactly that state.<ul>
+<li>This can also be achieved by localizing tank to the project once it's done</li>
+</ul>
+</li>
+<li>requires to maintain and possibly update apps in multiple tank installations</li>
+</ul>
+</li>
+<li>Track tk-core and each BUNDLE as component in an assembly<ul>
+<li>makes all tank management features unusable, and probably requires overrides to make it still find it's BUNDLEs</li>
+</ul>
+</li>
+</ol>
+<h2 id="studio-and-project-configuration">Studio and Project Configuration</h2>
+<p>The studio's configuration should be able to evolve from project to project, and should aid in maintaining and keeping all btank customizations. Fortunately, this is standard-fare, and tank uses git to maintain its standard configuration as a BUNDLE as well.</p>
+<p>Project configurations must be derived from the studio configuration, and should be placed right where the project is for consistency, and accessibility. The latter is a somewhat arbitrary choice, but one I prefer for companies that don't have a strong technical background with trained personnel.</p>
+<h3 id="solutions_1">Solutions</h3>
+<ol>
+<li>Maintain own configuration BUNDLE and use it when setting up new projects<ul>
+<li>fits perfectly into tanks design, and aligns with the intended use.</li>
+<li>proven technique, used by tank itself</li>
+<li>each project clone of the studio configuration is tracked and can be migrated back into the studio configuration using git in any way you can imaging</li>
+<li>it's safe, and even though its most likely world-writable on the project share, git will always be able to show changes and handle them responsibly.</li>
+</ul>
+</li>
+</ol>
+<p>It makes no sense to think of anything else here, as it would be hacky and have more downsides.</p>
+<h2 id="process-launching">Process Launching</h2>
+<p>Tank's implementation is minimal and allows only for setting arguments and environment variables of the process in question. In practice, there is much more to it, such as:</p>
+<ul>
+<li>configure extensions and versions thereof to be used in the host applications, along with their dependencies, recursively</li>
+<li>Handle GUI launches differently from those in a high performance computing environment</li>
+</ul>
+<h3 id="solutions_2">Solutions</h3>
+<ol>
+<li>Just specify the bprocess wrapper as program to be launched<ul>
+<li>Add's 3s on an smb share, on top of the 7s tank needs to do anything</li>
+<li>simple</li>
+<li>relocation not possible, as environment variables <a href="https://github.com/shotgunsoftware/tk-multi-launchapp/blob/master/app.py#L194">aren't resolved</a> in the path. Therefore, an absolute paths will have to be specified.</li>
+</ul>
+</li>
+<li>Adjust phase 2 bootstrapper to launch bprocess wrapper for tank itself<ul>
+<li>it's possible to create an 'evolutionary' configuration and adjust the <code>after_project_create.py</code> callback (erm, hook), which has enough information to post-process the phase 1 or phase 2 bootstrappers. This would fit well, as tank supports choosing any git-controlled configuration - <code>btank</code> could just provide it's own.</li>
+<li>Full control over environment variables and the tank startup process, which would allow to intercept launch requests entirely and would allow to speed up launching considerable. This is because I think the information tank wants within the host application can easily be obtained under 0.5s, which adds to the 3s the bprocess wrapper needs on a slow SMB share.</li>
+<li>Tank would become (more) relocatable, as we control the contents of args (<code>--pc=PATH</code>) and environment variables (<code>TANK_CURRENT_PC</code>). However, it's unclear to what extend the contents of the various other path containing files are affecting it. For some reason I am optimistic about this though.</li>
+</ul>
+</li>
+</ol>
+<h2 id="templates-and-folder-creation">Templates and Folder Creation</h2>
+<p>Tank comes with a system that requires to specify rules in a very verbose and repetitive fashion. There are two systems to maintain, the template system for paths and names, as well as the folder creation system (schema). They are likely to go out of sync at some point, facilitating undefined behavior.</p>
+<h3 id="solutions_3">Solutions</h3>
+<ol>
+<li>Use bsemantic-style grammar, and build the folder schema and templates.yml from that<ul>
+<li>one file for specifying everything (either yaml or .py, depending on the desired declaration language). It's really just a more concise description language, without actually using features of bsemantic.</li>
+<li>Support for tank features bsemantic doesn't have, as arbitrary meta-data can be inserted for use in the generated schema/templates.yml.</li>
+<li>needs a custom commandline tool and library to implement the transformation, and tank support to figure out which templates actually need to be define in the end. It needs to verify the generated configuration is sufficient.</li>
+<li>tank is guaranteed to work with it, once verified.</li>
+</ul>
+</li>
+<li>Use bsemantic to specify grammar, and enforce it's use at runtime<ul>
+<li>requires to either change tank code, or heavily monkey-patch it.</li>
+<li>depending on the amount of required changes, these are likely to break when tk-core changes, or fail subtly which is hard to debug.</li>
+</ul>
+</li>
+</ol>
+<h2 id="automation-using-shotgun-events">Automation using shotgun-events</h2>
+<p>TODO: </p>
 <h1 id="btank-and-tank">BTank and Tank</h1>
 <ul>
 <li><code>TODO</code>: write about the setup I am building and why, and how it's done. This could move into the readme, possibly. Write note about studio level configuration, and how it works.</li>
@@ -501,6 +596,7 @@ ${config}/tank shotgun_run_action launch_nuke Task 2517
 <ul>
 <li>Install it within the standard dependencies assembly, initially there might be no way around the redundant configuration issue. After all, tank must be able to find its manifest files.</li>
 <li>separate studio configuration from installation location, maybe just using symlinks</li>
+<li>make it use bprocess when starting applications, especially the shotgun plugin to get browser support</li>
 <li>Make it use kvstore (if configuration turns out to be too redundant, especially with paths)</li>
 <li>
 <p>Make it use bsemantic</p>
@@ -508,7 +604,6 @@ ${config}/tank shotgun_run_action launch_nuke Task 2517
 <li>
 <p>use own sg connection implementation (from bshotgun)</p>
 </li>
-<li>make it use bprocess when starting applications, especially the shotgun plugin to get browser support</li>
 </ul>
 </div>
         </div>
