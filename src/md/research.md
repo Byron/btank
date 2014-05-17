@@ -216,7 +216,7 @@ As most of the contents is well described in the official docs, I will focus on 
 
 The `PipelineConfiguration` entity contains the project's `TANK_PROJECT` root paths for all platforms, and allows the shotgun web gui to find the `tank` executable at `TANK_PROJECT/tank` to obtain tank related information and work with the file system.
 
-In conjunction with the shotgun plugin (formerly java plugin), this allows shotgun to execute arbitrary files and obtain their standard output (at least) and exit code. This is used to populate right-click menues with configured launchers, and to execute tank commands on the user's machine.
+In conjunction with the shotgun plugin (formerly java plugin), this allows shotgun to execute arbitrary files and obtain their standard output, standard error and exit code. This is used to populate right-click menues with configured launchers, and to execute tank commands on the user's machine.
 
 ## How Shotgun Web integrates with Tank
 
@@ -318,6 +318,93 @@ When launching something from the built-in launchers, the context is set using a
 ![under construction](https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png)
 
 
+# Problems and Solutions
+
+To aid defining a course of action, it's best to state the problems showing after first evaluation, in order of their perceived gravity.
+
+Solutions should be given in order of their ascending cost - let's try to find cheap solutions for heavy problems.
+
+
+
+## Tank as part of an assembly
+
+Tank is meant to be a standalone, and as self-contained as possible. Yet it should be port of an existing software repository and integrate with it. It's auto-update features and self-managing nature must be well understood to determine a good place and way of handling it.
+
+### Solutions
+
+1.  Treat tank as self-managed unit and integrate it as a whole
+    + All tank features for BUNDLE management are preserved, pulling on those that are required by a particular project configuration.The TANK_STUDIO location is tracked as a whole.
+    - `tk-core` may exist only in one version for the entire studio, which may be a risk if not handled correctly.
+    + requires no additional or special treatment, except for a few git commands.
+2.  As 1., but track multiple `tk-core` installations
+    - requires a tight bprocess override to work, as tk-core must be put in the path accordingly.
+    - possibly requires dynamic adjustment of configuration files tank expects to read to work
+    + Allows to choose any tank core version per project, and keeps them available forever in exactly that state.
+        - This can also be achieved by localizing tank to the project once it's done
+    - requires to maintain and possibly update apps in multiple tank installations
+3.  Track tk-core and each BUNDLE as component in an assembly
+    - makes all tank management features unusable, and probably requires overrides to make it still find it's BUNDLEs
+
+
+
+## Studio and Project Configuration
+
+The studio's configuration should be able to evolve from project to project, and should aid in maintaining and keeping all btank customizations. Fortunately, this is standard-fare, and tank uses git to maintain its standard configuration as a BUNDLE as well.
+
+Project configurations must be derived from the studio configuration, and should be placed right where the project is for consistency, and accessibility. The latter is a somewhat arbitrary choice, but one I prefer for companies that don't have a strong technical background with trained personnel.
+
+### Solutions
+
+1.  Maintain own configuration BUNDLE and use it when setting up new projects
+    + fits perfectly into tanks design, and aligns with the intended use.
+    + proven technique, used by tank itself
+    + each project clone of the studio configuration is tracked and can be migrated back into the studio configuration using git in any way you can imaging
+    + it's safe, and even though its most likely world-writable on the project share, git will always be able to show changes and handle them responsibly.
+
+It makes no sense to think of anything else here, as it would be hacky and have more downsides.
+
+
+
+## Process Launching
+
+Tank's implementation is minimal and allows only for setting arguments and environment variables of the process in question. In practice, there is much more to it, such as:
+
+* configure extensions and versions thereof to be used in the host applications, along with their dependencies, recursively
+* Handle GUI launches differently from those in a high performance computing environment
+
+### Solutions
+
+1.  Just specify the bprocess wrapper as program to be launched
+    - Add's 3s on an smb share, on top of the 7s tank needs to do anything
+    + simple
+    - relocation not possible, as environment variables [aren't resolved](https://github.com/shotgunsoftware/tk-multi-launchapp/blob/master/app.py#L194) in the path. Therefore, an absolute paths will have to be specified.
+2.  Adjust phase 2 bootstrapper to launch bprocess wrapper for tank itself
+    + it's possible to create an 'evolutionary' configuration and adjust the `after_project_create.py` callback (erm, hook), which has enough information to post-process the phase 1 or phase 2 bootstrappers. This would fit well, as tank supports choosing any git-controlled configuration - `btank` could just provide it's own.
+    + Full control over environment variables and the tank startup process, which would allow to intercept launch requests entirely and would allow to speed up launching considerable. This is because I think the information tank wants within the host application can easily be obtained under 0.5s, which adds to the 3s the bprocess wrapper needs on a slow SMB share.
+    + Tank would become (more) relocatable, as we control the contents of args (`--pc=PATH`) and environment variables (`TANK_CURRENT_PC`). However, it's unclear to what extend the contents of the various other path containing files are affecting it. For some reason I am optimistic about this though.
+
+
+
+## Templates and Folder Creation
+
+Tank comes with a system that requires to specify rules in a very verbose and repetitive fashion. There are two systems to maintain, the template system for paths and names, as well as the folder creation system (schema). They are likely to go out of sync at some point, facilitating undefined behavior.
+
+### Solutions
+
+1.  Use bsemantic-style grammar, and build the folder schema and templates.yml from that
+    + one file for specifying everything (either yaml or .py, depending on the desired declaration language). It's really just a more concise description language, without actually using features of bsemantic.
+    + Support for tank features bsemantic doesn't have, as arbitrary meta-data can be inserted for use in the generated schema/templates.yml.
+    - needs a custom commandline tool and library to implement the transformation, and tank support to figure out which templates actually need to be define in the end. It needs to verify the generated configuration is sufficient.
+    + tank is guaranteed to work with it, once verified.
+2.  Use bsemantic to specify grammar, and enforce it's use at runtime
+    - requires to either change tank code, or heavily monkey-patch it.
+    - depending on the amount of required changes, these are likely to break when tk-core changes, or fail subtly which is hard to debug.
+
+
+
+## Automation using shotgun-events
+
+TODO: 
 
 # BTank and Tank
 
@@ -327,9 +414,10 @@ When launching something from the built-in launchers, the context is set using a
 
 + Install it within the standard dependencies assembly, initially there might be no way around the redundant configuration issue. After all, tank must be able to find its manifest files.
 + separate studio configuration from installation location, maybe just using symlinks
+* make it use bprocess when starting applications, especially the shotgun plugin to get browser support
 * Make it use kvstore (if configuration turns out to be too redundant, especially with paths)
 * Make it use bsemantic
 
 * use own sg connection implementation (from bshotgun)
-* make it use bprocess when starting applications, especially the shotgun plugin to get browser support
+
 

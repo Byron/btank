@@ -3,7 +3,9 @@
 	[
 		{
 			"follow_symlinks": true,
-			"path": "/Users/byron/Documents/dev/bdevel/lib/integrations/tank"
-		}
+			"path": "../..",
+			"file_exclude_patterns" : ["*.sublime-*", "*.html"],
+
+		},
 	]
 }
