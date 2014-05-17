@@ -296,28 +296,6 @@ When launching something from the built-in launchers, the context is set using a
 
 
 
-# Interesting - for evaluation
-
-* Direct and deferred path creation (once in shotgun, once at app start ??)
-* path inference (obtain fields from path) if template is known
-* context keeps asset association/shotgun data link
-* department/process related app configurations are determined as such, whereas `bcore` uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called *environment*
-* core-> engines-> apps -> hooks
-    * engines are application specific, and seem to be brought up by core
-    * apps are engine plugins, hooks are app plugins
-    * frameworks are used by apps or engines
-    * apps can use other apps, which makes them kind of an executable framework.
-* app location configuration parameter should allow it to be local (but only so if kvstore resolution is used). Their configuration could in fact be coming from a kvstore, schemas will not overlap.
-* core hooks allow to choose environments, or make fundamental business logic decisions (e.g. *PIPELINE_CONFIG/core/hooks/pick_environment.py*)
-* tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.
-* 'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus
-* pipeline configurations are entities in shotgun, created by the API, pointing to the tank location on a per-project basis. This is where sandboxes are setup. They might support environment variables.
-* `sg_connection` studio hook in config/core allows to return custom connection types ... oh actually it's adjusting the connection settings - crowed too soon.
-
-
-![under construction](https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png)
-
-
 # Problems and Solutions
 
 To aid defining a course of action, it's best to state the problems showing after first evaluation, in order of their perceived gravity.
@@ -405,6 +383,32 @@ Tank comes with a system that requires to specify rules in a very verbose and re
 ## Automation using shotgun-events
 
 TODO: 
+
+
+
+
+# Interesting - for evaluation
+
+* Direct and deferred path creation (once in shotgun, once at app start ??)
+* path inference (obtain fields from path) if template is known
+* context keeps asset association/shotgun data link
+* department/process related app configurations are determined as such, whereas `bcore` uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called *environment*
+* core-> engines-> apps -> hooks
+    * engines are application specific, and seem to be brought up by core
+    * apps are engine plugins, hooks are app plugins
+    * frameworks are used by apps or engines
+    * apps can use other apps, which makes them kind of an executable framework.
+* app location configuration parameter should allow it to be local (but only so if kvstore resolution is used). Their configuration could in fact be coming from a kvstore, schemas will not overlap.
+* core hooks allow to choose environments, or make fundamental business logic decisions (e.g. *PIPELINE_CONFIG/core/hooks/pick_environment.py*)
+* tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.
+* 'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus
+* pipeline configurations are entities in shotgun, created by the API, pointing to the tank location on a per-project basis. This is where sandboxes are setup. They might support environment variables.
+* `sg_connection` studio hook in config/core allows to return custom connection types ... oh actually it's adjusting the connection settings - crowed too soon.
+
+
+![under construction](https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png)
+
+
 
 # BTank and Tank
 
