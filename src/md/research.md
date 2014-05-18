@@ -434,7 +434,7 @@ Shotgun software performs maintenance regularly at night, which is likely to be 
 
 
 
-## tank-configuration is enforces duplication and verbosity, and is generally less powerful than the `bkvstore`
+## tank-configuration enforces duplication and verbosity, and is generally less powerful than the `bkvstore`
 
 Configuring tank is a drag, and it's terrible to see that even default values have to be specified as such thanks to the 'non-sparse configuration' paradigm. Everything has to be repeated per 'environment', and even in the default configuration, 'tk-config-default', there are more than 10 yaml files with lot's of similar contents. tanks means of reducing redundancy are an afterthought and don't help as much as they should.
 
