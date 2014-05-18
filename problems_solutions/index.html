@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://byron.github.io/btank/problems_solutions/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+
+        <title>Problems and Solutions - btank</title>
+
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link href="../css/prettify-1.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="..">btank</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Research <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../about_tank/">About Tank</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../insights/">Insights</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="./">Problems and Solutions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../license/">License</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                
+                <li >
+                    <a rel="next" href="../insights/">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../license/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="https://github.com/Byron/btank">
+                        
+                            <i class="fa fa-github"></i>
+                        
+                        GitHub
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#tank-as-part-of-an-assembly">Tank as part of an assembly</a></li>
+        
+    
+        <li class="main "><a href="#studio-and-project-configuration">Studio and Project Configuration</a></li>
+        
+    
+        <li class="main "><a href="#process-launching">Process Launching</a></li>
+        
+    
+        <li class="main "><a href="#templates-and-folder-creation">Templates and Folder Creation</a></li>
+        
+    
+        <li class="main "><a href="#automation-of-common-processes">Automation of Common Processes</a></li>
+        
+    
+        <li class="main "><a href="#shotgun-and-tank-are-slow-due-to-high-round-trip-times">Shotgun and Tank are slow due to high round-trip times</a></li>
+        
+    
+        <li class="main "><a href="#high-risk-of-failure-due-to-reliance-on-internet">High risk of failure due to reliance on internet</a></li>
+        
+    
+        <li class="main "><a href="#tank-configuration-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration enforces duplication and verbosity, and is generally less powerful than the bkvstore</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<p>To aid defining a course of action, it's best to state the problems showing after first evaluation, in order of their perceived gravity.</p>
+<p>Solutions should be given in order of their ascending cost - let's try to find cheap solutions for heavy problems.</p>
+<h1 id="tank-as-part-of-an-assembly">Tank as part of an assembly</h1>
+<p>Tank is meant to be a standalone, and as self-contained as possible. Yet it should be port of an existing software repository and integrate with it. It's auto-update features and self-managing nature must be well understood to determine a good place and way of handling it.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Treat tank as self-managed unit and integrate it as a whole<ul>
+<li>All tank features for BUNDLE management are preserved, pulling on those that are required by a particular project configuration.The TANK_STUDIO location is tracked as a whole.</li>
+<li><code>tk-core</code> may exist only in one version for the entire studio, which may be a risk if not handled correctly.</li>
+<li>requires no additional or special treatment, except for a few git commands.</li>
+</ul>
+</li>
+<li>As 1., but track multiple <code>tk-core</code> installations<ul>
+<li>requires a tight bprocess override to work, as tk-core must be put in the path accordingly.</li>
+<li>possibly requires dynamic adjustment of configuration files tank expects to read to work</li>
+<li>Allows to choose any tank core version per project, and keeps them available forever in exactly that state.<ul>
+<li>This can also be achieved by localizing tank to the project once it's done</li>
+</ul>
+</li>
+<li>requires to maintain and possibly update apps in multiple tank installations</li>
+</ul>
+</li>
+<li>Track tk-core and each BUNDLE as component in an assembly<ul>
+<li>makes all tank management features unusable, and probably requires overrides to make it still find it's BUNDLEs</li>
+</ul>
+</li>
+</ol>
+<h1 id="studio-and-project-configuration">Studio and Project Configuration</h1>
+<p>The studio's configuration should be able to evolve from project to project, and should aid in maintaining and keeping all btank customizations. Fortunately, this is standard-fare, and tank uses git to maintain its standard configuration as a BUNDLE as well.</p>
+<p>Project configurations must be derived from the studio configuration, and should be placed right where the project is for consistency, and accessibility. The latter is a somewhat arbitrary choice, but one I prefer for companies that don't have a strong technical background with trained personnel.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Maintain own configuration BUNDLE and use it when setting up new projects<ul>
+<li>fits perfectly into tanks design, and aligns with the intended use.</li>
+<li>proven technique, used by tank itself</li>
+<li>each project clone of the studio configuration is tracked and can be migrated back into the studio configuration using git in any way you can imaging</li>
+<li>it's safe, and even though its most likely world-writable on the project share, git will always be able to show changes and handle them responsibly.</li>
+</ul>
+</li>
+</ol>
+<p>It makes no sense to think of anything else here, as it would be hacky and have more downsides.</p>
+<h1 id="process-launching">Process Launching</h1>
+<p>Tank's implementation is minimal and allows only for setting arguments and environment variables of the process in question. In practice, there is much more to it, such as:</p>
+<ul>
+<li>configure extensions and versions thereof to be used in the host applications, along with their dependencies, recursively</li>
+<li>Handle GUI launches differently from those in a high performance computing environment</li>
+</ul>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Just specify the bprocess wrapper as program to be launched<ul>
+<li>Add's 3s on an smb share, on top of the 7s tank needs to do anything</li>
+<li>simple</li>
+<li>relocation not possible, as environment variables <a href="https://github.com/shotgunsoftware/tk-multi-launchapp/blob/master/app.py#L194">aren't resolved</a> in the path. Therefore, an absolute paths will have to be specified.</li>
+</ul>
+</li>
+<li>Adjust phase 2 bootstrapper to launch bprocess wrapper for tank itself<ul>
+<li>it's possible to create an 'evolutionary' configuration and adjust the <code>after_project_create.py</code> callback (erm, hook), which has enough information to post-process the phase 1 or phase 2 bootstrappers. This would fit well, as tank supports choosing any git-controlled configuration - <code>btank</code> could just provide it's own.</li>
+<li>Full control over environment variables and the tank startup process, which would allow to intercept launch requests entirely and would allow to speed up launching considerable. This is because I think the information tank wants within the host application can easily be obtained under 0.5s, which adds to the 3s the bprocess wrapper needs on a slow SMB share.</li>
+<li>Tank would become (more) relocatable, as we control the contents of args (<code>--pc=PATH</code>) and environment variables (<code>TANK_CURRENT_PC</code>). However, it's unclear to what extend the contents of the various other path containing files are affecting it. For some reason I am optimistic about this though.</li>
+</ul>
+</li>
+</ol>
+<h1 id="templates-and-folder-creation">Templates and Folder Creation</h1>
+<p>Tank comes with a system that requires to specify rules in a very verbose and repetitive fashion. There are two systems to maintain, the template system for paths and names, as well as the folder creation system (schema). They are likely to go out of sync at some point, facilitating undefined behavior.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Use bsemantic-style grammar, and build the folder schema and templates.yml from that<ul>
+<li>one file for specifying everything (either yaml or .py, depending on the desired declaration language). It's really just a more concise description language, without actually using features of bsemantic.</li>
+<li>Support for tank features bsemantic doesn't have, as arbitrary meta-data can be inserted for use in the generated schema/templates.yml.</li>
+<li>needs a custom commandline tool and library to implement the transformation, and tank support to figure out which templates actually need to be define in the end. It needs to verify the generated configuration is sufficient.</li>
+<li>tank is guaranteed to work with it, once verified.</li>
+</ul>
+</li>
+<li>Use bsemantic to specify grammar, and enforce it's use at runtime<ul>
+<li>requires to either change tank code, or heavily monkey-patch it.</li>
+<li>depending on the amount of required changes, these are likely to break when tk-core changes, or fail subtly which is hard to debug.</li>
+</ul>
+</li>
+</ol>
+<h1 id="automation-of-common-processes">Automation of Common Processes</h1>
+<p>As tank can't rely on much more infrastructure than python, shotgun, and a storage location, automation can't be it's strong shoe. When looking at some design decisions of important 'apps', like the publisher, it's clear that automation wasn't considered very much.</p>
+<p>Nonetheless, it's important to be able to increase tanks usability to allow companies to use shotgun as a front-end for most important operations, which trigger processes that would otherwise be done by IT or other technical personnel.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Use shotgun-events to react to database changes<ul>
+<li>The shotgun database is something every tank user is guaranteed to have access to, using is a critical part of his workflow.</li>
+<li>shotgun-events needs a daemon that has to run somewhere - IT support is required for initial setup. After that, it should be maintenance free, except when its own code changes.</li>
+<li>Plugins can be used to react to any event you can imagine, and customize the experience according to the customers wishes and workflows. These are as simple as creating projects automatically when they leave bidding phase. Plugins need to be very configurable, to allow easy adjustments to different customers.</li>
+<li>some tank specific operations, like create project, still need research to assure it can be created without user interaction.</li>
+</ul>
+</li>
+</ol>
+<p>I see no other way than using shotgun-events. However, it was proven to be a very well working one.</p>
+<h1 id="shotgun-and-tank-are-slow-due-to-high-round-trip-times">Shotgun and Tank are slow due to high round-trip times</h1>
+<p>For some reason, shotgun-software doesn't think non-US clients deserve their own servers. They are currently hosting everything from the us, leading to request round-trip times of 250ms or more. This makes tank's interaction with shotgun very slow, which is not only annoying, but actively burns money.</p>
+<p>This holds true only for instances <em>not</em> hosted in-house, which at the time of writing too expensive for average size facilities.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Read-fast-write-slow shotgun connection<ul>
+<li>maintain an exact copy of all data within shotgun in an in-house caching database. Reads stay in-house, writes always go to shotgun and to the in-house database.<ul>
+<li>if writes to shotgun fail, the write to the in-house database either has to be reverted, or replayed to shotgun when it is available once again.</li>
+<li>it will be difficult to speed up all queries, as they might be too complex to exactly simulate results in shotgun. Therefore, only trivial queries of single entities should be considered, which will not speed up all code.</li>
+</ul>
+</li>
+<li>a custom implementation of a shotgun connection needs to be used to enabled this functionality. For use in tank, some monkey-patching or overrides will be required. There seems to be no simple way to override a shotgun connection.<ul>
+<li>With wrapper support in bootstrapper phase 1 or 2 (see <em>Process Launching</em>), it should be relatively easy to enforce a custom shotgun connection through a custom/overridden tank core implementation.</li>
+</ul>
+</li>
+<li>Will need a shotgun-events plugin to record all changes, and write latest data into the in-house caching.</li>
+<li>Doesn't work for anything not using a shotgun connection, like queries of thumbnails and other imagery. These are done using simple http-gets, which might be harder to intercept and cache. Tank applications maintain their own cache for that reason, so that should be less of an issue.</li>
+</ul>
+</li>
+</ol>
+<h1 id="high-risk-of-failure-due-to-reliance-on-internet">High risk of failure due to reliance on internet</h1>
+<p>Shotgun software performs maintenance regularly at night, which is likely to be well within other people's work time. Even if not, there will always be a render farm that can't get information all of the sudden.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>For User Interaction, use in-house caching database<ul>
+<li>Similar to the 'Read-fast-write-slow shotgun connection', with all benefits and disadvantages. It might just not catch enough queries to make all code work without a real shotgun connection.</li>
+<li>requires a lot of testing to verify most fundamental workflows, like opening a scene file, still work.</li>
+<li>in-house caching database might support a 'write-cache', which replays all changes to shotgun when it becomes available. Implementing this reliably seems difficult.</li>
+</ul>
+</li>
+<li>For non-user interaction, don't rely on shotgun at all<ul>
+<li>Whenever something is sent to the farm, provide enough information to know what todo.</li>
+<li>Write code that doesn't rely on shotgun/tank at all for these operations.</li>
+<li>Writes to shotgun (directly or using the tank API) should be expected to fail. Handle failures gracefully, ideally transparently by the used shotgun connection, or explicitly. Worst case the files are there, but nobody knows about it. Best case the information about them will be replayed to shotgun when it's back.</li>
+</ul>
+</li>
+</ol>
+<h1 id="tank-configuration-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration enforces duplication and verbosity, and is generally less powerful than the <code>bkvstore</code></h1>
+<p>Configuring tank is a drag, and it's terrible to see that even default values have to be specified as such thanks to the 'non-sparse configuration' paradigm. Everything has to be repeated per 'environment', and even in the default configuration, 'tk-config-default', there are more than 10 yaml files with lot's of similar contents. tanks means of reducing redundancy are an afterthought and don't help as much as they should.</p>
+<p>The <code>bkvstore</code> is capable of keeping all tank configuration, and in the same schema as tank requires it. Tank just has to use it.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>
+<p>Generate tank environment configuration from <code>bkvstore</code> configuration</p>
+<ul>
+<li>All tank-related configuration can be placed into the <code>bkvstore</code>, setting overrides per environment in a manner that allows more efficient specification of values. Traverse the <code>bkvstore</code> configuration and generate properly formatted environment configuration for tank to use.</li>
+<li>no runtime overrides necessary, validation is possible before using the generated configuration, at least to some extend, by tank itself.</li>
+<li>(plays well with the similar solution for handling schema and templates.yml)</li>
+</ul>
+</li>
+<li>
+<p>Override tank's standard implementation at runtime</p>
+<ul>
+<li>Tank has various configuration files, and some of them are accessed very directly, using code copied around in various places. Monkey-patching and overriding the implementation will be very difficult. A first step would be to deduplicate tanks code and to be sure configuration access is unified. Then one could override the respective API and make sure the own implementation is used.</li>
+<li>This is very difficult to achieve, and it might be easier to re-implement the tank API entirely to support their applications, frameworks and engines. After all, this might just not be worth it.</li>
+</ul>
+</li>
+</ol>
+</div>
+        </div>
+
+        
+
+        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/prettify-1.0.min.js"></script>
+        <script src="../js/base.js"></script>
+    </body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://byron.github.io/btank/insights/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+
+        <title>Insights - btank</title>
+
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link href="../css/prettify-1.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="..">btank</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Research <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../about_tank/">About Tank</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="./">Insights</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../problems_solutions/">Problems and Solutions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../license/">License</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                
+                <li >
+                    <a rel="next" href="../about_tank/">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../problems_solutions/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="https://github.com/Byron/btank">
+                        
+                            <i class="fa fa-github"></i>
+                        
+                        GitHub
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#configuration-and-structure">Configuration and Structure</a></li>
+        
+            <li><a href="#bundle-configuration">BUNDLE Configuration</a></li>
+        
+            <li><a href="#tank_studio-configuration-and-installation">TANK_STUDIO Configuration and Installation</a></li>
+        
+            <li><a href="#project-configuration">PROJECT Configuration</a></li>
+        
+            <li><a href="#tank_project-configuration">TANK_PROJECT Configuration</a></li>
+        
+            <li><a href="#shotgun-configuration">SHOTGUN Configuration</a></li>
+        
+    
+        <li class="main "><a href="#how-shotgun-web-integrates-with-tank">How Shotgun Web integrates with Tank</a></li>
+        
+    
+        <li class="main "><a href="#the-tank-command-startup-sequence">The tank command startup sequence</a></li>
+        
+    
+        <li class="main "><a href="#tank-context-and-how-engines-start-up">Tank Context and how engines start up</a></li>
+        
+            <li><a href="#environment-variables">Environment Variables</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h1 id="configuration-and-structure">Configuration and Structure</h1>
+<p>It looks like tank is literally spitting them everywhere. Generally we differentiate between <code>studio</code>, <code>project</code> and <code>localized</code> configuration types, as well as per-bundle configuration, and configuration within shotgun itself.</p>
+<p>Let's define some abstract root paths, which are used when denoting any paths</p>
+<ul>
+<li><code>BUNDLE</code><ul>
+<li>A bundle is anything that tank deals with, like <code>tk-core</code>, <em>engines</em> or <em>apps</em>. Note that hooks are no bundles, but just single python files</li>
+</ul>
+</li>
+<li><code>TANK_STUDIO</code><ul>
+<li>points to the studio configuration, usually at /mnt/software/tank/studio</li>
+</ul>
+</li>
+<li><code>PROJECT</code><ul>
+<li>points to the project data directory, e.g. at /mnt/projects/myproject</li>
+</ul>
+</li>
+<li><code>TANK_PROJECT</code><ul>
+<li>points to the per-project configuration/installation of tank, e.g. PROJECT/etc/tank . Typically, this points to PROJECT/tank, which is also why tank duplicates its folder structure partially.</li>
+</ul>
+</li>
+<li><code>SHOTGUN</code><ul>
+<li>Is merely a marker to indicate we are looking at data in the studios shotgun instance</li>
+</ul>
+</li>
+</ul>
+<p>Everything written in the following is based on my knowledge so far, obtained through reverse-engineering.</p>
+<h2 id="bundle-configuration">BUNDLE Configuration</h2>
+<p>A <a href="https://toolkit.shotgunsoftware.com/entries/22275546-How-to-write-Apps#The%20Template%20Starter%20App">bundle</a> is identified exclusively through it's manifest, <code>info.yml</code>. It's well documented, and handled by tank entirely. You won't have to touch it unless you are an app developer.</p>
+<p>It's worth nothing though that the <code>tk-core</code> bundle has special wrapper scripts at <code>BUNDLE/setup/root_binaries/tank[.bat]</code> which are copied to the PROJECT configuration whenever a new project is setup. They are called by the shotgun web GUI, see <em>How Shotgun Web integrates with Tank</em>.</p>
+<h2 id="tank_studio-configuration-and-installation">TANK_STUDIO Configuration and Installation</h2>
+<p>By default, the TANK_STUDIO root only contains basic configuration that will rarely change, and an installation of <code>tk-core</code> (a single version), and all <code>required</code> <em>engines</em> and <em>apps</em>. The term <code>required</code> means that tank will automatically install what's needed based on PROJECT configuration when the first one is initialized. As most people start out with the <code>tk-config-default</code> one, they will end up with about 625MB on disk. The data is quite redundant, so git compresses it down to 150MB. The <em>engines</em> and <em>apps</em> may exist in various versions in parallel, which allows you to switch between them safely.</p>
+<p><code>tk-core</code> maintains its own installation, organizing its bundles like so:</p>
+<pre class="prettyprint well"><code>TANK_STUDIO/install/BUNDLE_TYPE/SOURCE    /BUNDLE_NAME/VERSION/
+TANK_STUDIO/install/engines    /app_store/tk-maya     /v0.4.1
+</code></pre>
+
+<p>The core itself is located at <code>TANK_STUDIO/install/core</code>.</p>
+<p>Therefore, core doesn't support versions, as it has to serve as an entry point that needs to be known very well. In theory, I believe multi-version cores can be implemented even with the current version, but consistent upgrade paths might be difficult to achieve if people jump between versions.</p>
+<p>A fresh installation places the studio configuration into <code>TANK_STUDIO/config/core</code>, which contains the following files</p>
+<ul>
+<li><code>app_store.yml</code><ul>
+<li>Looks to me like a shotgun instance with information about where to download things. I didn't dig into it as it's not relevant for me right now.</li>
+</ul>
+</li>
+<li><code>install_location.yml</code><ul>
+<li>Contains three paths, each with an <em>absolute</em> path of the installation directory. The code handling it <em>doesn't</em> resolve environment variables, which makes it difficult to make it location independent.</li>
+<li>I will have to dig into the code more and try things before I can tell how it's possible to circumvent these 'hardcoded' paths for more location independence.</li>
+</ul>
+</li>
+<li><code>shotgun.yml</code><ul>
+<li>Looks unsurprisingly similar to the <code>app_store.yml</code>, providing login information for the studio's shotgun instance.</li>
+</ul>
+</li>
+<li>`interpreter_[Darwin|Linux|Windows].cfg<ul>
+<li>They contain just one line: the path to the system's python interpreter on the respective platform. It's read by the phase 2 tank bootstrapper (<code>tank_cmd[_login].sh</code>) to find the interpreter to use for launching <code>tank_cmd.py</code>. See 'The <code>tank</code> command startup sequence'</li>
+</ul>
+</li>
+</ul>
+<h2 id="project-configuration">PROJECT Configuration</h2>
+<p>This seems to be a more hard-coded location, as it is always in the PROJECT root, no matter where you install the tank configuration to. It hosts the following files</p>
+<ul>
+<li><code>PROJECT/tank/cache/path_cache.db</code><ul>
+<li>Contains a mapping between the project-relative path on disk and the entity with meta-data. From there, tank knows what to do with the file.</li>
+<li>It's heavily used, and really needs to be fast.</li>
+<li>Written whenever an asset is touched, each token of a path that corresponds to an Entity is listed there. A shot like 'shots/<sequence>/<shot>' leaves its sequence entity there, as well as its shot entity.</li>
+<li><strong>If it gets lost or is corrupted, tank will be rather blind</strong></li>
+</ul>
+</li>
+<li><code>PROJECT/tank/config/tank_configs.yml</code><ul>
+<li>Contains the project's TANK configuration locations for all platforms as absolute paths.</li>
+<li>It doesn't look like environment variables are resolved when handling the data, which makes it hard to impossible to make it relocatable.</li>
+</ul>
+</li>
+</ul>
+<h2 id="tank_project-configuration">TANK_PROJECT Configuration</h2>
+<p>This is a big one, as it keeps plenty of interesting caches and configuration files and shows that tank tries really hard to be somewhat pseudo relocatable. Primarily it masks that the actual installation is in the TANK_STUDIO root.</p>
+<p>The caches are located at <code>TANK_PROJECT/cache</code></p>
+<ul>
+<li><code>cache/shotgun_&lt;platform_short&gt;_&lt;entity_type&gt;.txt</code><ul>
+<li>A cache created by the shotgun command, and for the phase 1 bootstrapper scripts to be able to quickly return launcher information on a per-platform per-entity-type basis. Their contents is a digest of what was contained in the studio configuration. The latter needs to be interpreted by the python code, which tends to be quite slow compared to bare bash.</li>
+<li>The <code>tank[.bat]</code> phase one wrapper will check for these queries and return the cache if possible. Otherwise it hands over to phase 2, which reaches python to do the work just once.</li>
+<li>Whenever there is a page-reload, the cache is refreshed, which also ensures configuration changes are picked up quickly. It also means that one of there are plenty of expensive calls while browsing (python is the slow part)</li>
+</ul>
+</li>
+<li><code>BUNDLE_NAME</code><ul>
+<li>pretty much a dump for bundles (apps, frameworks, engines) with free-form cache data underneath</li>
+<li>commonly used  as icon and image cache, to save expensive lookups from the web. This could also mean the cache goes out of date unless some sort of TTL is implemented.</li>
+</ul>
+</li>
+</ul>
+<p>The second largest part is the <code>TANK_PROJECT/install</code> directory, which superficially looks like the <code>TANK_STUDIO/install</code> location. Except for it's all fake to simulate some expected structure for some scripts that should work there and in the actual <code>TANK_STUDIO/install</code> location.</p>
+<p>The interesting files are in <code>TANK_PROJECT/install/core</code></p>
+<ul>
+<li><code>core_[Darwin|Linux|Windows].cfg</code><ul>
+<li>A file with just a single line being an absolute path to the <code>TANK_STUDIO</code> location.</li>
+<li>Interpreted by the scripts explained below</li>
+</ul>
+</li>
+<li><code>python/[sgtk|tank]/__init__.py</code><ul>
+<li>A great example for how marketing decisions force programmers to introduce redundancy and even more complexity: <code>tank</code> was renamed to <code>sgtk</code> when it went from alpha to beta. Using some tricks, old code can still use <code>tank</code> internally, whereas new code can use <code>sgtk</code></li>
+<li>a so called <code>proxy wrapper</code> which loads the files mentioned above, and manipulates the <code>sys.path</code> and <strong>TANK_CURRENT_PC</strong> environment variable to call home, the actual implementation at <code>TANK_STUDIO</code>. The latter can then determine where it is coming from using the said environment variable, reading config files and so on.</li>
+</ul>
+</li>
+</ul>
+<p>Now we enter the heart of the configuration, <code>TANK_PROJECT/config</code>. It noteworthy that it is a bundle, which means that it can be 'installed' with git and versioned. It's part of the 'evolving configuration' paradigm, and can be replaced by other, possibly pre-made, configurations 'relatively' easily. Those could be <code>tk-config-default</code> or <code>tk-config-multi-root</code>.</p>
+<p>The <code>config</code> bundle can be supposedly be used by apps and frameworks to grab icons, hooks and configuration files. However, I believe it's primarily used by <code>tk-core</code> and then given to other bundles through APIs. Didn't dig into that though.</p>
+<ul>
+<li><code>info.yml</code><ul>
+<li>Shows it's a bundle, but I am not sure if it used that way.</li>
+</ul>
+</li>
+<li><code>after_project_create.py</code><ul>
+<li>I don't actually know why a hook was dropped there, outside of it's native habitat, the <code>hooks</code> folder.</li>
+</ul>
+</li>
+</ul>
+<p>As most of the contents is well described in the official docs, I will focus on the files interesting to the <code>tank</code> startup. Let's look at <code>TANK_PROJECT/config/core</code>. All files not mentioned here are the same as in <code>TANK_STUDIO/config/core</code></p>
+<ul>
+<li><code>install_location.yml</code><ul>
+<li>It's a reflection of the information in the <code>primary</code> pipeline configuration entity of the respective project, containing multi-platform paths to <code>TANK_PROJECT</code></li>
+<li>It's a somewhat redundant copy of <code>PROJECT/tank/config/tank_configs.yml</code>, and environment variables in paths are not resolved when it's handled.</li>
+</ul>
+</li>
+<li><code>pipeline_configuration.yml</code><ul>
+<li>It's the reverse of the <code>install_location.yml</code>, containing the entity information for querying the PipelineConfiguration entity which in turn contains path information similar to <code>install_location.yml</code>, next to other web gui related stuff.</li>
+</ul>
+</li>
+<li><code>roots.yml</code><ul>
+<li>Contains multi-platform paths similar to the SHOTGUN information regarding it's primary <strong>Local File Storage</strong> .</li>
+<li>It's keyed to that multiple <strong>Local File Storage</strong> roots can be cached there, and I believe it's used when resolving templates and when using the path schema for creating folders and skeletons.</li>
+</ul>
+</li>
+</ul>
+<h2 id="shotgun-configuration">SHOTGUN Configuration</h2>
+<p>The <code>PipelineConfiguration</code> entity contains the project's <code>TANK_PROJECT</code> root paths for all platforms, and allows the shotgun web gui to find the <code>tank</code> executable at <code>TANK_PROJECT/tank</code> to obtain tank related information and work with the file system.</p>
+<p>In conjunction with the shotgun plugin (formerly java plugin), this allows shotgun to execute arbitrary files and obtain their standard output, standard error and exit code. This is used to populate right-click menues with configured launchers, and to execute tank commands on the user's machine.</p>
+<h1 id="how-shotgun-web-integrates-with-tank">How Shotgun Web integrates with Tank</h1>
+<p>The shotgun plugin is able to execute files, and that's it. This capability is used to launch the project-specific tank executable. This one is known thanks to the 'primary' (or whichever) PipelineConfiguration entity associated with the project.</p>
+<p>This command is a boostrapper which loads tk-core and uses it for evaluating the configuration, returning values interpreted by java script (?).</p>
+<p>Those are typical invocation the gui frontend does, including their return values</p>
+<pre class="prettyprint well"><code class="bash">${config}/tank shotgun_cache_actions Asset shotgun_mac_asset.txt
+ins writes the specified text file - apparently configuration loading is slow enough to require
+ a speed up. This is something to think about when bringing in own tools,  
+ who should be fast too
+${config}/tank shotgun_get_actions shotgun_mac_asset.txt shotgun_asset.yml
+ Runs in 0.017 seconds, bash only
+&gt; launch_nuke$Launch Nuke$$False
+&gt; show_in_filesystem$Show in File System$$True
+&gt; launch_photoshop$Launch Photoshop$$False
+&gt; preview_folders$Preview Create Folders$$True
+&gt; create_folders$Create Folders$$True
+&gt; launch_screeningroom$Show in Screening Room$$False
+&gt; launch_maya$Launch Maya$$False
+${config}/tank shotgun_run_action launch_nuke Task 2517
+ launches nuke, after redirecting the call to tank_cmd_login.sh, which is similar to tank_cmd.sh
+ but uses a different shebang. Copy-past at its finest.
+ In the end it launches tank like so (after setting the PYTHONPATH accordingly)
+ /System/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python [...]/dependencies/lib/tank/studio/install/core/scripts/tank_cmd.py [...]/dependencies/lib/tank/studio shotgun_run_action launch_maya Task 2517 --pc=[...]/PROJECT/etc/tank
+ It is refusing to use the CWD for anything (as a native context for instance)
+ This command takes exactly 7s due to various shotgun queries, until it finally launches nuke
+</code></pre>
+
+<p>Conclusions are</p>
+<ul>
+<li>the project tank executable needs to be as fast as possible<ul>
+<li>It blocks the web-frontend, which waits with drawing until command returns.</li>
+<li>If our own wrapper can easily be integrated by adjusting the studio installation's tank command at <em>install/core/scripts/tank_cmd.py</em></li>
+</ul>
+</li>
+<li>The python command itself is extremely slow at launching applications, probably due to various shotgun queries it does in the process.<ul>
+<li>It takes quite unacceptable 7s in my tests to commence launching any application.<ul>
+<li>tank itself is initialized after 0.22s (<code>tk = tank.tank_from_path(pipeline_config_root)</code>)</li>
+<li>a context is available (from entity) after 0.8s (<code>ctx = tk.context_from_entity(entity_type, entity_ids[0])</code>)</li>
+<li>an engine is available after 2.7s (<code>e = engine.start_shotgun_engine(tk, entity_type, ctx)</code>)</li>
+<li>executes the actual command, which returns after a whopping 7s (<code>e.execute_command(action_name)</code>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>On the setup I work with (sluggish smb-share, mounted on OSX), the wrapper takes 3s to launch anything, which brings overall application startup time to 10s<ul>
+<li>However, I believe that the information that ends up in the application is nearly entirely known, which makes filling out the data easy. Combined with an sql read cache, startup can be done in 3.5s or less, with the bcore in charge of course.</li>
+</ul>
+</li>
+</ul>
+<h1 id="the-tank-command-startup-sequence">The <code>tank</code> command startup sequence</h1>
+<p>As called by the web gui, or from the commandline</p>
+<ul>
+<li>scripts located in <code>STUDIO/install/core/[scripts|setup]</code></li>
+<li>call sequence: <code>TANK_PROJECT/tank[.bat]</code> -&gt; <code>TANK_STUDIO/install/core/scripts/tank_cmd[.bat|_login.sh|.sh]</code> -&gt; <code>TANK_STUDIO/install/core/scripts/tank_cmd.py</code></li>
+</ul>
+<p>Note that the TANK_STUDIO/tank startup sequence is similar, but determines by <em>the presence or absence of files</em> what kind of installation it is. For example, the presence of the <code>TANK_STUDIO/config/core/templates.yml</code> indicates a project installation, and maybe even that it is localized.</p>
+<h1 id="tank-context-and-how-engines-start-up">Tank Context and how engines start up</h1>
+<p>In order to bring contextual information to the application, tank can use various ways. Generally, it can do it by path, and by entity.</p>
+<p>When launching something from the built-in launchers, the context is set using a pickled dict, containing entity data.</p>
+<h2 id="environment-variables">Environment Variables</h2>
+<ul>
+<li>tk-core is their entry point and must be in the PYTHONPATH, e.g. '[...]/studio/install/core/python'</li>
+<li><code>TANK_CURRENT_PC</code><ul>
+<li>'/Volumes/raid_V/pipelinetest2014/etc/tank'</li>
+</ul>
+</li>
+<li><code>TANK_CONTEXT</code><ul>
+<li>pickle of <code>{ '_pc_path': '[...]/PROJECT/etc/tank',
+     'additional_entities': [],
+     'entity': {'id': 887, 'name': 'bob', 'type': 'Asset'},
+     'project': {'id': 638, 'name': 'PROJECT', 'type': 'Project'},
+     'step': None,
+     'task': None,
+     'user': None}</code>        </li>
+</ul>
+</li>
+<li><code>TANK_ENGINE</code>, like 'tk-maya' . The latter is only important for bootstrapping, of course this can be done by an own facility as well. In the end, you </li>
+<li><code>TANK_FILE_TO_OPEN</code> - a file that should be opened right away. Warning: depends on the engine's implementation, maya deferres for instance, which will be troublesome in batch mode. But who needs batch mode ;).</li>
+</ul>
+</div>
+        </div>
+
+        
+
+        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/prettify-1.0.min.js"></script>
+        <script src="../js/base.js"></script>
+    </body>
+</html>

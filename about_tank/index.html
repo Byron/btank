@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://byron.github.io/btank/about_tank/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+
+        <title>About Tank - btank</title>
+
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link href="../css/prettify-1.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="..">btank</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Research <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li class="active">
+                            <a href="./">About Tank</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../insights/">Insights</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../problems_solutions/">Problems and Solutions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../license/">License</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                
+                <li >
+                    <a rel="next" href="..">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../insights/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="https://github.com/Byron/btank">
+                        
+                            <i class="fa fa-github"></i>
+                        
+                        GitHub
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#about-tank">About Tank</a></li>
+        
+            <li><a href="#coding-and-software-organization">Coding and Software Organization</a></li>
+        
+            <li><a href="#tank-commandline-tool">tank commandline tool</a></li>
+        
+            <li><a href="#templates-and-folders-creation">Templates and Folders Creation</a></li>
+        
+            <li><a href="#configuration-system">Configuration System</a></li>
+        
+            <li><a href="#application-launcher">Application Launcher</a></li>
+        
+            <li><a href="#workflow">Workflow</a></li>
+        
+            <li><a href="#engines">Engines</a></li>
+        
+    
+        <li class="main "><a href="#interesting-for-evaluation">Interesting - for evaluation</a></li>
+        
+    
+        <li class="main "><a href="#btank-and-tank">BTank and Tank</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h1 id="about-tank">About Tank</h1>
+<h2 id="coding-and-software-organization">Coding and Software Organization</h2>
+<ul>
+<li>tk-core by now has a good test suite !</li>
+<li>Haven't seen tests in any app or hook. Testing is done manually, and in conjunction with the duplicated code portion, will eventually lead to undetected bugs.</li>
+<li>TDs can reload code in-app, it's nice for them as they are not used to test-driven workflows anyway.</li>
+<li>docs are nicely written and <a href="https://tank.zendesk.com/entries/23874562">good looking</a></li>
+<li><strong>sinful</strong>: Main app's bundle logic with GUI, making it impossible to reproduce their logic in non-gui mode. The latter is neat for automation.</li>
+<li>Non test-driven development is encouraged by providing means to reload code while the application is running. This is probably what led to tanks major sin, see top of the document.</li>
+<li>Probably as some kind of workaround, required frameworks (if provided by tank) can't just be imported, but need a custom method to be called. They also have non-python compatible characters in their names, like dashes ... (maybe there is a way to convert them to their python names procedurally).<ul>
+<li>This makes deriving hooks from one another special too - you can inherit from the hook you are overriding, but someone else can't inherit from you as there is exactly one level of overrides for hooks.</li>
+<li>There is a special syntax which allows multi-inheritance, which greatly re-invents the wheel. Inside of the hook, it's very abstract what your base actually is, and even worse, can change without the code knowing. Another form of redundancy.</li>
+</ul>
+</li>
+<li>Hooks can access the parent app through <code>self.parent</code>, which doesn't help in isolating them.</li>
+<li>Tk-core is special, and typically shared. Can be localized, which makes it a standalone copy based on some other copy.</li>
+<li>Even hooks are defined in yaml, which is degenerating what can actually be done in a programming language. When extending implementation, its more powerful to use language facilities (i.e. types, delegate-patterns, events, plugin systems). They are supposed to be lightweight, but calling them is super expensive, even for python.</li>
+<li>Docs are separated from the code repositories. This means, they easily get out of sync with what's implemented, as the developer has to break out of the normal dev-environment. What's worse is that contributors can't make fixes while they are reading.</li>
+<li>it looks very expensive to use frameworks, as they are instantiated and loaded just for you. Even though it might be good for avoiding shared state and components affecting each other, I doubt it's really what you want.</li>
+<li>(plenty of code I would want to override is on module level, which forces me to monkey patch every single function. If it would be a class level method, only the class would need monkey patching, or instantiation. The latter would be the desired way.) - I don't think I will override framework loading.</li>
+<li>As they don't have a wrapper, they workaround this with dirty sys.path hacks. This makes their structure and way of working so much more complex ... it's not OK. There is a lot of code dancing around this fact !<ul>
+<li>this is also why there is lots of magic involved, and lots of assumptions about the folder structure. That's quite bad, as you will never guess why it's doing what it's doing (i.e. 'config/core/templates.yml' is special and used to find out if the core is 'localized')</li>
+</ul>
+</li>
+<li>The more I dig into the code, the more redundancy I notice. There are 9 rather simmilar usages of the 'install_location.yml', building a path to it in 'config/core'. Argh, it gets worse the more you look ! They get paid by the line of codes they make, now it's clear.</li>
+<li>different 'pipeline configurations' allow to do sandboxes/local testing. If configuration is linked up with git, it's actually maintainable.</li>
+<li>can be started from existing pipelines, such that tank is clean enough not to do much on import. It relies on a <code>tk</code> singleton.</li>
+<li>The code does a lot of error checking, especially when reading external files, which are unreliable by definition.</li>
+</ul>
+<h2 id="tank-commandline-tool"><code>tank</code> commandline tool</h2>
+<ul>
+<li>tank command subcommands are well documented online, but non-standard (e.g. no usage). The reason for this is that tank is parsing it's commandline arguments itself ... doing worse than what can be done with standard libraries. It's annoying not to get a list of available commands, but to have to <a href="https://toolkit.shotgunsoftware.com/entries/24024798-Administering-and-Configuring-Sgtk">look them up online</a>.</li>
+<li>tank commandline tools are based on a lot of interaction, querying the user for input. This actively discourages their integration into scripts, and kind of misses the target group</li>
+<li>Text files created by setup_project are executable for some reason</li>
+</ul>
+<h2 id="templates-and-folders-creation">Templates and Folders Creation</h2>
+<ul>
+<li><strong>sinful</strong>: to me it looks like the template system and the 'path schema' in the project configuration are different things. One is used for general paths when doing 'create paths ...' from shotgun or the commandline, the other is used in path templates for apps. This redundancy can make both go out of sync easily !! Really ? Of course they do it to have a simple way to copy skeletons automatically. But what are skeletons worth if they are not customized to the project ? It's a sin, as the path creation system should make sure paths and names are always right !</li>
+<li>path template system configuration is redundant, and inflexible (proof). You are forced to repeat yourself. There is a way ('inclusion'), but what's less redundant than a tree ?</li>
+<li>path inference needs to know the ‘type’ of path you look at. The 'type' is the template name. This means you can't </li>
+<li>capitalization in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps). Capitalization shouldn't be important, but it is as it is used to match shotgun entity names.</li>
+<li>app-configuration is one per file. Overrides are done redundantly per environment. It's a general issue though if no central cascading tree is used (like kvstore)</li>
+<li>good: versions in yaml have ‘v’ prefix to make sure they become string, not float, even without quoting them. Actually, it's not done like that in real configuration files, so it seems redundant.</li>
+<li>They warn the user when launching the toolkit with so far untested versions of the host application.</li>
+<li>path template validation. <code>bsemantic</code> does this in test-cases, but something similar must exist to make it failsafe/easy to use. To not be forced to put everything into yaml, the system could collect plugins that support a certain interface, and call their generators to see if a particular context can work.</li>
+<li>deferred path creation is a good, as it will create directories only when the asset is actually worked on. My way of doing it would be to respond to particular changes though, so the directory and basesetup is created when the task is assigned or set to in-progress. Nonetheless, I see the point.</li>
+<li>template system can be used for paths and strings</li>
+<li>multi-root configuration is possible, and easy to configure, but verbose as everything.</li>
+<li>It's possible to centralize configuration while maintaining the ability to make overrides by using configuration includes<ul>
+<li>it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)</li>
+</ul>
+</li>
+<li><strong>sinful</strong> Tank is using a <code>path_cache.db</code>, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to <a href="http://sqlite.org/faq.html#q5">fail in concurrent situations</a>.</li>
+</ul>
+<h2 id="configuration-system">Configuration System</h2>
+<ul>
+<li>Upgrade config files on schema change<ul>
+<li>Even though I think there should be viable defaults, this is not always possible. Generally one should refrain from introducing changes that break an application if a piece of information doesn't exist. Instead, the application should deal with it. It's good to have a facility that can handle these updates though.</li>
+<li>Upgrading means rewriting, which would probably drop comments ... .</li>
+</ul>
+</li>
+<li>Redundant per context configuration (aka environments) (see what's good as a partial remediation to this issue)<ul>
+<li>This seems like a workaround to a 'single-file' configuration system paradigm.</li>
+<li>you are forced to repeat yourself when configuring apps (-maintainability, +complexity)</li>
+<li>there are ways to centralize the configuration using git, or to make inclusions, which can reduce the impact of this issue. Still it's just not as good as having a base and pulling in overrides.</li>
+</ul>
+</li>
+<li>environment configuration files are non-sparse, which means a lot of text that just says 'default' as value. Whenever someone adds a new attribute/property in the engine/app configuration, your configuration files will not see it anyway, and thus be 'sparse' unintentionally. This leaves you with unnecessarily verbose configuration that I dislike already.</li>
+<li>Provided the 'semantic configuration file names' feature for environments is dynamic, configuration selection by context is something <code>bcore</code> doesn't do right now. This runtime feature could be implemented easily though, provided we have context information. Done in the 'pick_environment' hook - the equivalent would be done in a custom Application (for runtime changes) or a delegate for pre-runtime changes. The latter is more powerful as the entire program configuration can be adjusted properly.</li>
+<li>yaml-configurable schemas for pretty much everything. bapp could make that possible, after all it's just a KeyValueStoreSchema from settings</li>
+<li>very declarative when it comes to what code requires to work, e.g. which environment code expects. In <code>bcore</code>, there is no such thing as code specific to a particular environment will have a package requirement to the needed package, will be a plugin that implements an interface. The latter is abstract.</li>
+<li>As required framework versions are specified per application, it's easy to have one application which prevents anything to come up. In <code>bcore</code>, this check is left to the code (and to the one writing configuration files) - but the code will only recognize the version issue when the applications is launched. Chances are that it isn't even called. However, <code>bcore</code> isn't able to determine if packages have incompatible requirements, in terms of the version they need.</li>
+<li>Automatic shotgun schema upgrades - engines or apps in need for a particular field will be sure to have it.</li>
+<li>at least environment variables can be used to specify hooks, <code>{$EVAR}/path/to/hook.py</code>. That will make customizations so much easier, considering bprocess will be used to set everything up.</li>
+<li>there is a 'dict' value type, which allows one level of nesting for values, effectively. But not more.</li>
+<li>tank has more meta-data for its schema's than the kvstore. The latter wants it that way, yet <code>bproperties</code> could be used to one day get more meta-data for schema values. After all GUIs will want to have that.</li>
+<li>Configuration is handled manually by default, and even though there are tools to help managing it, by default there is not RCS. This is inherently dangerous on sites that have many developers. <code>push_configuration</code> for instance replaces the desired target configuration with the one you are seeing, making a zip backup of the previous configuration files. The docs say nothing how to roll back using one of these, or how to verify that no one else edited them prior to that.</li>
+<li>studio level base configuration can be put into git, and then used as base from which to clone when creating new configurations. Interestingly, this doesn't seem to include environments at all, at least not according to the docs. What is it worth without it ? Oh, one more example later and it seems it can do it that way. Good. Well, trying it shows that he can also copy a file path, and doesn't get that this is actually a git repository. Nonetheless, this can be fixed after the fact (by putting the repo) using a path of the form described at <code>tank/deploy/git_descriptor.py:34</code>.<ul>
+<li>It's actually exactly the same as what's done with <code>tk-config-default</code> or <code>tk-config-multiroot</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="application-launcher">Application Launcher</h2>
+<ul>
+<li>can only launch packaged programs on OSX, like <em>/Applications/Nuke8.0v4/Nuke8.0v4.app</em>, whereas <em>/Applications/Nuke8.0v4/Nuke8.0v4.app/Nuke8.0v4</em> doesn't work (but works on commandline)</li>
+<li>it takes about 5s until the application even starts to load when launched from the shotgun web gui</li>
+</ul>
+<h2 id="workflow">Workflow</h2>
+<ul>
+<li>In order to obtain shot folders, one has to perform an action manually. What you want is to set the status of the shot to something indicating it can now be handled, and have the system create the paths for you. However, folder creation is automatically done when launching an application.</li>
+<li>It seems by default, new files have no name, so user is free to choose. This needs customization, but might be intended for the default configuration.<ul>
+<li>You have to use 'Shotgun Save As ...' in order to land save in right folder </li>
+<li>For some reason, it doesn't allow '_-' by default (??)</li>
+</ul>
+</li>
+<li>Context can dynamically change, see 'Work Files App', or 'pick_environment' hook</li>
+</ul>
+<h2 id="engines">Engines</h2>
+<ul>
+<li>Not all engines support <code>TANK_FILE_TO_OPEN</code>, they simply don't implement it, but delete the variable from the environment.</li>
+</ul>
+<h1 id="interesting-for-evaluation">Interesting - for evaluation</h1>
+<ul>
+<li>Direct and deferred path creation (once in shotgun, once at app start ??)</li>
+<li>path inference (obtain fields from path) if template is known</li>
+<li>context keeps asset association/shotgun data link</li>
+<li>department/process related app configurations are determined as such, whereas <code>bcore</code> uses different wrapper configurations (which allow to do more, effectively, see package.include). It’s called <em>environment</em></li>
+<li>core-&gt; engines-&gt; apps -&gt; hooks<ul>
+<li>engines are application specific, and seem to be brought up by core</li>
+<li>apps are engine plugins, hooks are app plugins</li>
+<li>frameworks are used by apps or engines</li>
+<li>apps can use other apps, which makes them kind of an executable framework.</li>
+</ul>
+</li>
+<li>app location configuration parameter should allow it to be local (but only so if kvstore resolution is used). Their configuration could in fact be coming from a kvstore, schemas will not overlap.</li>
+<li>core hooks allow to choose environments, or make fundamental business logic decisions (e.g. <em>PIPELINE_CONFIG/core/hooks/pick_environment.py</em>)</li>
+<li>tank does 'app' configuration at runtime (and makes them available), whereas bprocess is doing it before runtime. Both would combine well, so there might be no need to use bprocess for anything app related.</li>
+<li>'shotgun_entitytype.yaml' environment file to configure in-browser RMB menus</li>
+<li>pipeline configurations are entities in shotgun, created by the API, pointing to the tank location on a per-project basis. This is where sandboxes are setup. They might support environment variables.</li>
+<li><code>sg_connection</code> studio hook in config/core allows to return custom connection types ... oh actually it's adjusting the connection settings - crowed too soon.</li>
+</ul>
+<h1 id="btank-and-tank">BTank and Tank</h1>
+<ul>
+<li><code>TODO</code>: write about the setup I am building and why, and how it's done. This could move into the readme, possibly. Write note about studio level configuration, and how it works.</li>
+</ul>
+<p><img alt="under construction" src="https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png" /></p>
+</div>
+        </div>
+
+        
+
+        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/prettify-1.0.min.js"></script>
+        <script src="../js/base.js"></script>
+    </body>
+</html>
