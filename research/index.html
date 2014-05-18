@@ -159,7 +159,7 @@
         
             <li><a href="#high-risk-of-failure-due-to-reliance-on-internet">High risk of failure due to reliance on internet</a></li>
         
-            <li><a href="#tank-configuration-is-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration is enforces duplication and verbosity, and is generally less powerful than the bkvstore</a></li>
+            <li><a href="#tank-configuration-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration enforces duplication and verbosity, and is generally less powerful than the bkvstore</a></li>
         
     
         <li class="main "><a href="#interesting-for-evaluation">Interesting - for evaluation</a></li>
@@ -619,7 +619,7 @@ ${config}/tank shotgun_run_action launch_nuke Task 2517
 </ul>
 </li>
 </ol>
-<h2 id="tank-configuration-is-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration is enforces duplication and verbosity, and is generally less powerful than the <code>bkvstore</code></h2>
+<h2 id="tank-configuration-enforces-duplication-and-verbosity-and-is-generally-less-powerful-than-the-bkvstore">tank-configuration enforces duplication and verbosity, and is generally less powerful than the <code>bkvstore</code></h2>
 <p>Configuring tank is a drag, and it's terrible to see that even default values have to be specified as such thanks to the 'non-sparse configuration' paradigm. Everything has to be repeated per 'environment', and even in the default configuration, 'tk-config-default', there are more than 10 yaml files with lot's of similar contents. tanks means of reducing redundancy are an afterthought and don't help as much as they should.</p>
 <p>The <code>bkvstore</code> is capable of keeping all tank configuration, and in the same schema as tank requires it. Tank just has to use it.</p>
 <h3 id="solutions_7">Solutions</h3>
