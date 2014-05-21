@@ -51,6 +51,21 @@
 + It's possible to centralize configuration while maintaining the ability to make overrides by using configuration includes
     + it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)
 - **sinful** Tank is using a `path_cache.db`, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to [fail in concurrent situations](http://sqlite.org/faq.html#q5).
++ support for optional fields (`foo[_{optional}]` becomes `foo` if optional field is not present)
+- overly complicated filter specification in entity query
++ can refer to entities defined in any parents, somehow it can substitute into _the right thing™_
++ alter folder structure depending on actual shotgun entity data
++ substitution dictionary can actively be filled while traversing the tree, using queries
++ access to linked fields via dot notation during folder creation
++ deferred creation tied to engine startup - can be limited to particular engines
++ can copy contents of entire folders, also conditional depending on presence of entity in context
++ can create symlinks
++ any meta-data can be passed to hooks for their interpretation
++ delegation of any corresponding action, using a hook
++ substitution keys in templates have meta-data on their own, which makes templates more readable
+- special key-aliasing is required to support different settings for the same (internal) key name
++ templates are multi-root compatible, requires extended configuration style
+- seems to imply that folder creation is not multi-root compatible
 
 
 ## Configuration System
