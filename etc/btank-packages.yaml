@@ -11,7 +11,7 @@ packages:
       variables:
         PYTHONPATH: 'core/python'
         # allows to refer to the tank tree from other packages
-        TANK_TREE: 'core/python'
+        TANK_TREE: '.'
 
   ######################
   tank-engine-maya: ###
