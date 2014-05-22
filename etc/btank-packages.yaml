@@ -29,11 +29,17 @@ packages:
   btank-package: ###
   #################
     name: BCore Tank Integration Package
+    trees:
+      - '{settings-files.btank-packages.dirname}/..'
     requires:
+      - bcore
       - tank-studio-install
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
       Or in other words: Advantages of bcore with the gui features of tank.
+    environment:
+      variables:
+        PYTHONPATH: src/python
 
   ###########
   btank:  ##
@@ -43,11 +49,14 @@ packages:
       A wrapped tank to help fix a few things, and make it relocatable, maybe.
     url: https://github.com/Byron/btank
     alias: python
+    boot:
+      plugin_paths: '{settings-files.btank-packages.dirname}/../src/python/btank/plugins/bprocess.py'
+    delegate: TankDelegate
     requires:
       - python
       - btank-package
     arguments:
-      resolve: on
+      resolve: yes
       prepend:
         - '$TANK_TREE/core/scripts/tank_cmd.py'
 
