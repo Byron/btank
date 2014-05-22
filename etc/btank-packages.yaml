@@ -1,17 +1,17 @@
 packages:
-  ###############
-  tank-core: ###
-  #############
-    # trees: to be set by parent assembly
+  #########################
+  tank-studio-install: ###
+  #######################
+    # trees: to be set by parent assembly. Must include the 'core' directory
     name: Tank Installation
     description: |
       The installation you get when installing tank the first time. It should contain 
       all the apps and engines and engines you want to use in projects.
     environment:
       variables:
-        PYTHONPATH: 'install/core/python'
+        PYTHONPATH: 'core/python'
         # allows to refer to the tank tree from other packages
-        TANK_TREE: 'install/core/python'
+        TANK_TREE: 'core/python'
 
   ######################
   tank-engine-maya: ###
@@ -19,17 +19,37 @@ packages:
     name: Tank Engine for Maya
     description: |
       Configures tank to know the maya engine should be initialized.
+    requires:
+      - tank-studio-install
     environment:
       variables:
         TANK_ENGINE: tk-maya
 
-  ###########
-  btank: ###
-  #########
-    name: BCore Tank Integration
+  ###################
+  btank-package: ###
+  #################
+    name: BCore Tank Integration Package
+    requires:
+      - tank-studio-install
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
       Or in other words: Advantages of bcore with the gui features of tank.
+
+  ###########
+  btank:  ##
+  #########
+    name: Fancy Tank Executable
+    description: |
+      A wrapped tank to help fix a few things, and make it relocatable, maybe.
+    url: https://github.com/Byron/btank
+    alias: python
+    requires:
+      - python
+      - btank-package
+    arguments:
+      resolve: on
+      prepend:
+        - '$TANK_TREE/core/scripts/tank_cmd.py'
 
 
 

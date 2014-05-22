@@ -4,6 +4,11 @@
 		{
 			"follow_symlinks": true,
 			"path": "../..",
+			"folder_exclude_patterns" : [
+				"pages",
+				".git",
+				"doc"
+			],
 			"file_exclude_patterns" : ["*.sublime-*", "*.html"],
 
 		},

@@ -3,7 +3,7 @@
 
 ## Coding and Software Organization
 
-+ tk-core by now has a good test suite !
+- tk-core by now has a test suite - measured coverage is an incredible **43%**
 - Haven't seen tests in any app or hook. Testing is done manually, and in conjunction with the duplicated code portion, will eventually lead to undetected bugs.
 + TDs can reload code in-app, it's nice for them as they are not used to test-driven workflows anyway.
 + docs are nicely written and [good looking](https://tank.zendesk.com/entries/23874562)
@@ -11,7 +11,9 @@
 - Non test-driven development is encouraged by providing means to reload code while the application is running. This is probably what led to tanks major sin, see top of the document.
 - Probably as some kind of workaround, required frameworks (if provided by tank) can't just be imported, but need a custom method to be called. They also have non-python compatible characters in their names, like dashes ... (maybe there is a way to convert them to their python names procedurally).
     - This makes deriving hooks from one another special too - you can inherit from the hook you are overriding, but someone else can't inherit from you as there is exactly one level of overrides for hooks.
+    - As it's special, hook derivation doesn't work for core hooks ! It's clearly a 'special case bug'
     - There is a special syntax which allows multi-inheritance, which greatly re-invents the wheel. Inside of the hook, it's very abstract what your base actually is, and even worse, can change without the code knowing. Another form of redundancy.
+    + reloading of all code is possible this way, but requires all in-memory instance to be closed/tossed out before you see an effect.
 - Hooks can access the parent app through `self.parent`, which doesn't help in isolating them.
 - Tk-core is special, and typically shared. Can be localized, which makes it a standalone copy based on some other copy.
 - Even hooks are defined in yaml, which is degenerating what can actually be done in a programming language. When extending implementation, its more powerful to use language facilities (i.e. types, delegate-patterns, events, plugin systems). They are supposed to be lightweight, but calling them is super expensive, even for python.
@@ -50,7 +52,7 @@
 + multi-root configuration is possible, and easy to configure, but verbose as everything.
 + It's possible to centralize configuration while maintaining the ability to make overrides by using configuration includes
     + it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)
-- **sinful** Tank is using a `path_cache.db`, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to [fail in concurrent situations](http://sqlite.org/faq.html#q5).
+- **sinful** Tank is using a `path_cache.db`, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to [fail in concurrent situations](http://sqlite.org/faq.html#q5). To add insult to injury, it's not a cache, but an index that is required for tank to work. Throw away a cache, and it will be regenerated, throw away an index, and you are in trouble !
 + support for optional fields (`foo[_{optional}]` becomes `foo` if optional field is not present)
 - overly complicated filter specification in entity query
 + can refer to entities defined in any parents, somehow it can substitute into _the right thing™_
@@ -64,8 +66,7 @@
 + delegation of any corresponding action, using a hook
 + substitution keys in templates have meta-data on their own, which makes templates more readable
 - special key-aliasing is required to support different settings for the same (internal) key name
-+ templates are multi-root compatible, requires extended configuration style
-- seems to imply that folder creation is not multi-root compatible
++ templates are multi-root compatible, requires extended configuration style. Folder schema is multi-root too
 
 
 ## Configuration System
