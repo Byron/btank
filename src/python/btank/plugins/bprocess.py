@@ -6,18 +6,25 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-__all__ = ['TankCommandDelegate', 'TankEngineDelegate']
+__all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate']
 
 import os
 import sys
 
 import bapp
-from butility import Path
+from butility import (Path,
+                      abstractmethod,
+                      update_env_path)
 from bprocess import process_schema
 
 import logging
 log = logging.getLogger('btank.plugins.bprocess')
 
+
+# ==============================================================================
+## @name Utility Types
+# ------------------------------------------------------------------------------
+## @{
 
 
 class TankDelegateCommonMixin(object):
@@ -38,6 +45,10 @@ class TankDelegateCommonMixin(object):
     ## -- End Interface -- @}
 
 # end class TankDelegateCommonMixin
+
+
+## -- End Utility Types -- @}
+
 
 
 class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bapp.plugin_type()):
@@ -78,12 +89,20 @@ class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ba
 # end class TankCommandDelegate
 
 
-class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bapp.plugin_type()):
+class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
     """A delegate to startup any tank engine, using the bootstrapper provided by the multi-launch app.
     The context will be created using tank's own mechanisms.
     """
-
     __slots__ = '_context_paths'    # paths we have encountered on the commandline, including the actual executable
+
+    # -------------------------
+    ## @name Subclass Configuration
+    # @{
+
+    ## Name of the application, for which to create an engine, like 'maya', or 'photoshop' 
+    host_app_name = None
+    
+    ## -- End Subclass Configuration -- @}
 
     def __init__(self, *args, **kwargs):
         """Intiailize our member variables"""
@@ -131,7 +150,8 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bap
         executable, env, new_args, cwd = super(TankEngineDelegate, self).pre_start(executable, env, args, cwd, resolve)
         rval = (executable, env, new_args, cwd)
 
-        self._context_paths.append(self._actual_executable())
+        actual_executable = self._actual_executable()
+        self._context_paths.append(actual_executable)
         self._context_paths.append(cwd)
 
         try:
@@ -146,14 +166,93 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bap
 
         # This is dangerous, as we are depending on magic values here
         # TODO: PUT INTO CONFIGURATION !
+        location_dict = {'name' : 'tk-multi-launchapp' ,
+                         'version' : 'v0.2.19',
+                         'type' : 'app_store'}
+        import tank.deploy.descriptor
         try:
-            env = tk.pipeline_configuration.get_environment('shotgun_project', ctx)
-            dsc = env.get_app_descriptor('tk-shotgun', 'tk-shotgun-launchmaya')
+            dsc = tank.deploy.descriptor.get_from_location(tank.deploy.descriptor.AppDescriptor.APP, 
+                                                           tk.pipeline_configuration,
+                                                           location_dict)
         except Exception as err:
             log.error("Couldn't find location of multi-launchapp with error: %s", err)
             return rval
         # end couldn't find multi-launch app
 
+        if ctx.project is None:
+            log.error("Couldn't obtain a valid tank context from path '%s' - tank is disabled", context_path)
+            return rval
+        # end verify context isn't empty
+
+        # prepare the tank environment
+        import tank.context
+        env['TANK_CONTEXT'] = tank.context.serialize(ctx)
+
+        host_app_name = self._host_app_name(actual_executable)
+        env['TANK_ENGINE'] = 'tk-' + host_app_name
+
+        startup_path = Path(dsc.get_path()) / 'app_specific' / host_app_name / 'startup'
+        if not startup_path.isdir():
+            log.error("No engine startup configuration found at '%s' - tank will be disabled", startup_path)
+            return rval
+        # end handle startup dir
+
+        try:
+            self.prepare_tank_engine_environment(startup_path, new_args, env)
+        except Exception as err:
+            # just log the exception
+            log.error("Failed to configure '%s' tank engine with error: %s - tank is disabled", 
+                        host_app_name, err)
+        # end ignore exception
+        
         return rval
 
+    # -------------------------
+    ## @name Subclass Interface
+    # @{
+
+    def _host_app_name(self, executable):
+        """@return the name of the host application the engine we configure is for
+        @param executable the name of the executable originally launched
+        @note subtypes should implement the host_app_name class member variable"""
+        if self.host_app_name is not None:
+            return self.host_app_name
+
+        # guess it - this would work fine in many cases, but shouldn't be the default
+        log.debug("Guessing tank engine from application name '%s' - if it doesn't work, set a tank delegate", executable)
+        return executable.namebase()
+
+    @abstractmethod
+    def prepare_tank_engine_environment(self, startup_tree, args, env):
+        """Alter given args or env in place in order to make the launched application.
+        @param startup_tree Path to the root of the host application specific startup directory in the
+        tk-multi-launchapp. It is already verified to exist
+        @param args list of program arguments
+        @param env dict with environment variables - already containing the tank engine specific ones
+        @throws any exception to disable tank"""
+
+    ## -- End Subclass Interface -- @}
+
 # end class TankEngineDelegate
+
+
+
+# ==============================================================================
+## @name Application Specific Tank Delegates
+# ------------------------------------------------------------------------------
+## @{
+
+
+class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+    __slots__ = ()
+
+    host_app_name = 'hiero'
+
+    def prepare_tank_engine_environment(self, startup_tree, args, env):
+        update_env_path('HIERO_PLUGIN_PATH', startup_tree, append = False, environment = env)
+        
+
+# end class HieroTankEngineDelegate
+
+## -- End Application Specific Tank Delegates -- @}
+
