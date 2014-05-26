@@ -141,27 +141,19 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bap
             return rval
         # end ignore exceptions
 
-        import tank.platform.engine
-
         # Get the most specific context, initialize an engine with it.
         ctx = tk.context_from_path(context_path)
-        engine = tank.platform.engine.start_shotgun_engine(tk, 'Project', ctx)
 
-        # Find the multi-launch app, need it's location
-        mla = None
-        for app in engine.apps.values():
-            if app.name == 'tk-multi-launchapp':
-                mla = app
-                break
-            # end we have a match
-        # end for each app
-
-        if mla is None:
-            log.error("Couldn't find multi-launch app in engine - is it not configured ?", engine)
+        # This is dangerous, as we are depending on magic values here
+        # TODO: PUT INTO CONFIGURATION !
+        try:
+            env = tk.pipeline_configuration.get_environment('shotgun_project', ctx)
+            dsc = env.get_app_descriptor('tk-shotgun', 'tk-shotgun-launchmaya')
+        except Exception as err:
+            log.error("Couldn't find location of multi-launchapp with error: %s", err)
             return rval
-        # end
+        # end couldn't find multi-launch app
 
-        print dir(app)
         return rval
 
 # end class TankEngineDelegate
