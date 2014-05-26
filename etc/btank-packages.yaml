@@ -1,3 +1,13 @@
+#########
+tank: ##
+#######
+  engine-delegate:
+    multi-launchapp-location:
+      name: tk-multi-launchapp
+      version: v0.2.19
+      type: app_store
+
+
 packages:
   #########################
   tank-studio-install: ###

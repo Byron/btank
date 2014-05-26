@@ -17,6 +17,8 @@ from butility import (Path,
                       abstractmethod,
                       update_env_path)
 from bprocess import process_schema
+from bkvstore import KeyValueStoreSchema
+from bapp import ApplicationSettingsMixin
 
 import logging
 log = logging.getLogger('btank.plugins.bprocess')
@@ -90,11 +92,16 @@ class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ba
 # end class TankCommandDelegate
 
 
-class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
+class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ApplicationSettingsMixin):
     """A delegate to startup any tank engine, using the bootstrapper provided by the multi-launch app.
     The context will be created using tank's own mechanisms.
     """
     __slots__ = '_context_paths'    # paths we have encountered on the commandline, including the actual executable
+
+    _schema = KeyValueStoreSchema('tank.engine-delegate', {'multi-launchapp-location' : 
+                                                                    dict(name = 'tk-multi-launchapp',
+                                                                         version = 'v0.2.19',
+                                                                         type = 'app_store')})
 
     # -------------------------
     ## @name Subclass Configuration
@@ -169,10 +176,7 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
         ctx = tk.context_from_path(context_path)
 
         # This is dangerous, as we are depending on magic values here
-        # TODO: PUT INTO CONFIGURATION !
-        location_dict = {'name' : 'tk-multi-launchapp' ,
-                         'version' : 'v0.2.19',
-                         'type' : 'app_store'}
+        location_dict = self.settings_value()['multi-launchapp-location']
         import tank.deploy.descriptor
         try:
             dsc = tank.deploy.descriptor.get_from_location(tank.deploy.descriptor.AppDescriptor.APP, 
