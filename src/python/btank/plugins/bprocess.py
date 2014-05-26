@@ -6,7 +6,8 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-__all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate', 'NukeTankEngineDelegate']
+__all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate', 'NukeTankEngineDelegate', 
+           'MayaTankEngineDelegate']
 
 import os
 import sys
@@ -101,6 +102,9 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
 
     ## Name of the application, for which to create an engine, like 'maya', or 'photoshop' 
     host_app_name = None
+
+    ## An environment variable which is supposed to be set with the app specific startup directory
+    host_app_evar = None
     
     ## -- End Subclass Configuration -- @}
 
@@ -222,14 +226,19 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
         log.debug("Guessing tank engine from application name '%s' - if it doesn't work, set a tank delegate", executable)
         return executable.namebase()
 
-    @abstractmethod
     def prepare_tank_engine_environment(self, startup_tree, args, env):
         """Alter given args or env in place in order to make the launched application.
         @param startup_tree Path to the root of the host application specific startup directory in the
         tk-multi-launchapp. It is already verified to exist
         @param args list of program arguments
         @param env dict with environment variables - already containing the tank engine specific ones
-        @throws any exception to disable tank"""
+        @throws any exception to disable tank
+        @default implementation will just prepend the startup directory to the configured host_app_evar variable"""
+        if self.host_app_evar is not None:
+            update_env_path(self.host_app_evar, startup_tree, append = False, environment = env)
+        else:
+            raise NotImplementedError("Either set the 'host_app_evar' class member, or implement this method")
+        # end handle evar
 
     ## -- End Subclass Interface -- @}
 
@@ -246,10 +255,7 @@ class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
     __slots__ = ()
 
     host_app_name = 'hiero'
-
-    def prepare_tank_engine_environment(self, startup_tree, args, env):
-        update_env_path('HIERO_PLUGIN_PATH', startup_tree, append = False, environment = env)
-
+    host_app_evar = 'HIERO_PLUGIN_PATH'
 
 # end class HieroTankEngineDelegate
 
@@ -258,10 +264,17 @@ class NukeTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
     __slots__ = ()
 
     host_app_name = 'nuke'
-
-    def prepare_tank_engine_environment(self, startup_tree, args, env):
-        update_env_path('NUKE_PATH', startup_tree, append = False, environment = env)
+    host_app_evar = 'NUKE_PATH'
         
+# end class NukeTankEngineDelegate
+
+
+class MayaTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+    __slots__ = ()
+
+    host_app_name = 'maya'
+    host_app_evar = 'PYTHONPATH'
+
 # end class NukeTankEngineDelegate
 
 
