@@ -37,6 +37,18 @@ packages:
       variables:
         TANK_ENGINE: tk-hiero
 
+  ######################
+  tank-engine-nuke: ###
+  ####################
+    name: Tank Engine for Nuke
+    description: |
+      Configures tank to know the nuke engine should be initialized.
+    requires:
+      - btank-package
+    environment:
+      variables:
+        TANK_ENGINE: tk-nuke
+
   ###################
   btank-package: ###
   #################

@@ -6,7 +6,7 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-__all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate']
+__all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate', 'NukeTankEngineDelegate']
 
 import os
 import sys
@@ -242,7 +242,6 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin):
 # ------------------------------------------------------------------------------
 ## @{
 
-
 class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
     __slots__ = ()
 
@@ -250,9 +249,21 @@ class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
 
     def prepare_tank_engine_environment(self, startup_tree, args, env):
         update_env_path('HIERO_PLUGIN_PATH', startup_tree, append = False, environment = env)
-        
+
 
 # end class HieroTankEngineDelegate
+
+
+class NukeTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+    __slots__ = ()
+
+    host_app_name = 'nuke'
+
+    def prepare_tank_engine_environment(self, startup_tree, args, env):
+        update_env_path('NUKE_PATH', startup_tree, append = False, environment = env)
+        
+# end class NukeTankEngineDelegate
+
 
 ## -- End Application Specific Tank Delegates -- @}
 
