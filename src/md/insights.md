@@ -53,7 +53,9 @@ A fresh installation places the studio configuration into `TANK_STUDIO/config/co
 
 ## PROJECT Configuration
 
-This seems to be a more hard-coded location, as it is always in the PROJECT root, no matter where you install the tank configuration to. It hosts the following files
+This seems to be a more hard-coded location, as it is always in the PROJECT root, no matter where you install the tank configuration to, and is required for tank to find its context from any path within the project. To do that, it will search upwards from a given project path and try to find a 'tank' directory, which will be used to find the pipeline configuration for that project, and complete the bootstrapping process.
+
+It hosts the following files
 
 * `PROJECT/tank/cache/path_cache.db`
     - Contains a mapping between the project-relative path on disk and the entity with meta-data. From there, tank knows what to do with the file.

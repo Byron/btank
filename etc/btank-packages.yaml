@@ -20,10 +20,22 @@ packages:
     description: |
       Configures tank to know the maya engine should be initialized.
     requires:
-      - tank-studio-install
+      - btank-package
     environment:
       variables:
         TANK_ENGINE: tk-maya
+
+  #######################
+  tank-engine-hiero: ###
+  #####################
+    name: Tank Engine for Hiero
+    description: |
+      Configures tank to know the hiero engine should be initialized.
+    requires:
+      - btank-package
+    environment:
+      variables:
+        TANK_ENGINE: tk-hiero
 
   ###################
   btank-package: ###
@@ -34,6 +46,9 @@ packages:
     requires:
       - bcore
       - tank-studio-install
+    boot:
+      # make sure standard delegates are available to help dealing with tank
+      plugin_paths: '{settings-files.btank-packages.dirname}/../src/python/btank/plugins/bprocess.py'
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
       Or in other words: Advantages of bcore with the gui features of tank.
@@ -49,9 +64,7 @@ packages:
       A wrapped tank to help fix a few things, and make it relocatable, maybe.
     url: https://github.com/Byron/btank
     alias: python
-    boot:
-      plugin_paths: '{settings-files.btank-packages.dirname}/../src/python/btank/plugins/bprocess.py'
-    delegate: TankDelegate
+    delegate: TankCommandDelegate
     requires:
       - python
       - btank-package

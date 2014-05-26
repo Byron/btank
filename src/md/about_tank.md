@@ -67,7 +67,7 @@
 + substitution keys in templates have meta-data on their own, which makes templates more readable
 - special key-aliasing is required to support different settings for the same (internal) key name
 + templates are multi-root compatible, requires extended configuration style. Folder schema is multi-root too
-
++ templates can easily be shared, to link outputs of one application to the inputs of another
 
 ## Configuration System
 
@@ -97,6 +97,7 @@
 
 - can only launch packaged programs on OSX, like _/Applications/Nuke8.0v4/Nuke8.0v4.app_, whereas _/Applications/Nuke8.0v4/Nuke8.0v4.app/Nuke8.0v4_ doesn't work (but works on commandline)
 - it takes about 5s until the application even starts to load when launched from the shotgun web gui
+- app launcher application will alter the current process' environment, which makes it somewhat dangerous to use from within an application (i.e. to start RV from within nuke, in a pipeline-conform way)
 
 
 
