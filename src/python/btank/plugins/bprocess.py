@@ -11,6 +11,7 @@ __all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate
 
 import os
 import sys
+import subprocess
 
 import bapp
 from butility import (Path,
@@ -173,7 +174,7 @@ class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ba
 
         settings = self._app.context().settings().value_by_schema(tank_command_schema)
         # create a fake executable, which is in the correct project already
-        executable = Path(args[0]).dirname() / (settings.app_name.prefix + val.host_app_name + settings.app_name.suffix)
+        executable = Path(self._actual_executable()).dirname() / (settings.app_name.prefix + val.host_app_name + settings.app_name.suffix)
         # We drop args here, as we just assume to have handled them all
         # Let's give it all the args which are obviously ours
         args = [a for a in args if a.startswith(ProcessController.wrapper_arg_prefix)]
@@ -188,7 +189,8 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
     """A delegate to startup any tank engine, using the bootstrapper provided by the multi-launch app.
     The context will be created using tank's own mechanisms.
     """
-    __slots__ = '_context_paths'    # paths we have encountered on the commandline, including the actual executable
+    __slots__ = ('_context_paths',      # paths we have encountered on the commandline, including the actual executable
+                 '_tank_initialized')    # will be true once we have managed to initialize tank
 
     _schema = tank_engine_schema
 
@@ -208,6 +210,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         """Intiailize our member variables"""
         super(TankEngineDelegate, self).__init__(*args, **kwargs)
         self._context_paths = list()
+        self._tank_initialized = False
 
     def _extract_path(self, arg):
         """intercept paths given on the commandline"""
@@ -252,7 +255,6 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
             return rval
         # end ignore exceptions
 
-        # This is dangerous, as we are depending on magic values here
         settings = self.settings_value()
 
         # Get the most specific context, and feed it to the engine via env vars
@@ -305,8 +307,67 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
             log.error("Failed to configure '%s' tank engine with error: %s - tank is disabled", 
                         host_app_name, err)
         # end ignore exception
-        
+
+        self._tank_initialized = True
         return rval
+
+    def environment_storage_chunk_size(self):
+        """@return a value small enough to work with shell invocation, we we are about to do so.
+        The latter is only the case if shotgun invoked us through the browser.
+        For some reason, if the value is higher than that, it gets replaced by the variable name ... ."""
+        if not self.settings_value().host_app_name:
+            return super(TankEngineDelegate, self).environment_storage_chunk_size()
+        return 2048
+
+    def start(self, args, cwd, env, spawn):
+        """If we are started from shotgun, make sure we are forking using the shell. Otherwise the browser 
+        will never get our return code, and never think we are done.
+        This is the kind of special behaviour built into tank, yet something you never want to have outside 
+        of the browser-specific case."""
+        settings = self.settings_value()
+        if not settings.host_app_name:
+            # if we have not been started through the tank command, just go ahead as normal
+            # Even if tank failed to initialize, launch the application
+            return super(TankEngineDelegate, self).start(args, cwd, env, spawn)
+        # end 
+
+        # Browser mode: The browser has started us and is tracking our pid.
+        # It will indicate we are running, and would keep doing that if we would spawn/exec as well, which is 
+        # not desireable. Instead, we have to fork off a new process, and go down ourselves with 0
+        # Here it's the only purpose to have tank really, so we abort loudly if we failed
+        # Even though it's not without issues and special cases, it's easier to use the shell than to implement 
+        # it on non-posix platforms ... .
+        if not self._tank_initialized:
+            # Previously printed errors will show up in shotgun browser
+            sys.exit(1)
+        # end quit early if we failed
+
+        if sys.platform == "linux2":
+            args.append('&')
+        elif sys.platform == "darwin":
+            executable, app_args = args[0], args[1:]
+            args = ['open', '-n', '-a'] + [executable]
+            if app_args:
+                args.append('--args')
+                args.extend(app_args)
+            # end handle app_args
+        elif sys.platform == "win32":
+            args = ['start', '/B'] + args
+        # end handle shell based forking
+
+        # on posix, the shell behaviour is special, as such as args passed to the shell.
+        # For that reason, we have to convert into a string, but at least want to do it properly 
+        # in case of whitespace.
+        # NOTE: for now, we don't expect or support special shell characters
+        cmd = ''
+        for arg in args:
+            if ' ' in arg:
+                arg = '"%s"' % arg
+            cmd += arg + ' '
+        # end for each arg to sanitize
+
+        log.log(logging.TRACE, cmd)
+        return self.communicate(subprocess.Popen(cmd.strip(), shell=True, cwd = cwd, env=env))
 
     # -------------------------
     ## @name Subclass Interface
