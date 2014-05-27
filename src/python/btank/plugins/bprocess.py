@@ -30,6 +30,21 @@ log = logging.getLogger('btank.plugins.bprocess')
 ## @{
 
 
+root_key = 'tank'
+tank_engine_schema = KeyValueStoreSchema('%s.engine-delegate' % root_key, 
+                                                                {'multi-launchapp-location' : 
+                                                                    dict(name = 'tk-multi-launchapp',
+                                                                         version = 'v0.2.19',
+                                                                         type = 'app_store'),
+                                                                  'host_app_name' : str,
+                                                                  'entity_type' : str,
+                                                                  'entity_id' : int})
+
+tank_command_schema = KeyValueStoreSchema('%s.command-delegate' % root_key, {'app_name' : 
+                                                                                dict(prefix = str,
+                                                                                     suffix = str)})
+
+
 class TankDelegateCommonMixin(object):
     """Some methods suitable for all delegates implemented here"""
     __slots__ = ()
@@ -44,6 +59,23 @@ class TankDelegateCommonMixin(object):
     def _actual_executable(self):
         """@return path to the executable originally invoked invoked"""
         return self._app.context().settings().value_by_schema(process_schema).executable
+
+
+    @classmethod
+    def _sgtk_module(cls, env):
+        """@return the sgtk package, as demoninated in the environment
+        @throws EnvironmentError if we couldn't find it"""
+        root = env.get('TANK_TREE')
+        if not root:
+            raise EnvironmentError("Expected TANK_TREE environment variable to be set")
+        root = Path(root) / 'core' / 'python'
+        sys.path.append(str(root))
+        try:
+            import sgtk
+        except ImportError as err:
+            raise EnvironmentError("Failed to import tank from '%s' with error: %s", root, str(err))
+        # end
+        return sgtk
     
     ## -- End Interface -- @}
 
@@ -54,12 +86,19 @@ class TankDelegateCommonMixin(object):
 
 
 
-class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, bapp.plugin_type()):
+class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, bapp.plugin_type()):
     """process arguments to be suitable for tank.
     Additinoally we can intercept launch commands and execute them ourselves.
     """
 
     tank_pc_arg='--pc='
+    launch_prefix = 'launch_'
+
+    def _extract_path(self, arg):
+        """Handle --pc= arg explicitly, in order to be sure to pick up project configuration at least"""
+        if arg.startswith(self.tank_pc_arg):
+            arg = arg[len(self.tank_pc_arg):]
+        return super(TankCommandDelegate, self)._extract_path(arg)
 
     # -------------------------
     ## @name Interface Overrides
@@ -67,7 +106,6 @@ class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ba
     
     def pre_start(self, executable, env, args, cwd, resolve):
         executable, env, new_args, cwd = super(TankCommandDelegate, self).pre_start(executable, env, args, cwd, resolve)
-
         # and the second argument must be the tank install root ... lets make it happy
         if len(new_args) > 2 and not os.path.isabs(new_args[1]):
             install_root = Path(new_args[0]).dirname().dirname().dirname()
@@ -82,26 +120,77 @@ class TankCommandDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ba
             actual_executable = self._actual_executable()
             base = actual_executable.dirname()
             assert (base / 'tank').exists(), "Currently '%s' must be right next to the 'tank' executable" % executable
-            new_args.append(self.tank_pc_arg + base)
+            new_args.append(str(self.tank_pc_arg + base))
         # end setup context
 
+        #######################
+        # Process Arguments ##
+        #####################
+        if len(new_args) > 6 and new_args[3].startswith(self.launch_prefix):
+            # now we could go crazy and try to find asset paths in order to provide context to bprocess
+            # We could also use the shotgun context in some way, to feed data to our own asset management
+            # However, for now using the project itself should just be fine, but this is certainly 
+            # to be improved
+
+            # Additinally, what we really want is to start any supported program, and enforce tank support by
+            # fixing up delegates. For that, we will create a new process controller, which uses our Application 
+            # instance, and the delegate that it defined so far.
+            # However, we are currently unable to truly provide the information we have to a new process controller, 
+            # unless it's communicated via the context.
+
+            # It should be one of ours (e.g. TankEngineDelegate derivative) if there is tank support, which 
+            # requires proper configuration.
+            
+            # For that to work, we will override the entire start procedure, as in pre-start we can't and should not
+            # swap in the entire delegate
+            def set_overrides(schema, value):
+                value.host_app_name = new_args[3][len(self.launch_prefix):]
+                value.entity_type = new_args[4]
+                value.entity_id = int(new_args[5])
+            # end overrides setter
+
+            # usually, this is done during prepare_context(), but we don't need the controller to react to 
+            # context changes and do plenty of extra work
+            ctx = self.DelegateContextOverrideType('tank-engine-information').setup(
+                                                                                self._app.context().settings(),
+                                                                                set_overrides, 
+                                                                                tank_engine_schema)
+            self._app.context().push(ctx)
+            
+            # tk = self._sgtk_module(env).tank_from_entity(entity_type, entity_id)
+            # ctx = tk.context_from_entity(entity_type, entity_id)
+        #end handle particular command mode
+
         return (executable, env, new_args, cwd)
+
+    def start(self, args, cwd, env, spawn):
+        """Check if there is an override for the engine, and launch up a new process controller with our application.
+        That way, the originally configured delegate can handle the matter accordinlgy"""
+        val = self._app.context().settings().value_by_schema(tank_engine_schema)
+        if not val.host_app_name:
+            return super(TankCommandDelegate, self).start(args, cwd, env, spawn)
+        # end ignore if there is no override
+
+        settings = self._app.context().settings().value_by_schema(tank_command_schema)
+        # create a fake executable, which is in the correct project already
+        executable = Path(args[0]).dirname() / (settings.app_name.prefix + val.host_app_name + settings.app_name.suffix)
+        # We drop args here, as we just assume to have handled them all
+        # Let's give it all the args which are obviously ours
+        args = [a for a in args if a.startswith(ProcessController.wrapper_arg_prefix)]
+        return ProcessController(executable, args=args, cwd = cwd, application = self._app).execute()
 
     ## -- End Interface Overrides -- @}
 
 # end class TankCommandDelegate
 
 
-class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, ApplicationSettingsMixin):
+class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ApplicationSettingsMixin):
     """A delegate to startup any tank engine, using the bootstrapper provided by the multi-launch app.
     The context will be created using tank's own mechanisms.
     """
     __slots__ = '_context_paths'    # paths we have encountered on the commandline, including the actual executable
 
-    _schema = KeyValueStoreSchema('tank.engine-delegate', {'multi-launchapp-location' : 
-                                                                    dict(name = 'tk-multi-launchapp',
-                                                                         version = 'v0.2.19',
-                                                                         type = 'app_store')})
+    _schema = tank_engine_schema
 
     # -------------------------
     ## @name Subclass Configuration
@@ -136,16 +225,7 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, App
         @param paths from which to pull the context. They should be sorted from most specialized to to least 
         specialized
         @throws EnvironmentError if we couldn't find it"""
-        root = env.get('TANK_TREE')
-        if not root:
-            raise EnvironmentError("Expected TANK_TREE environment variable to be set")
-        root = Path(root) / 'core' / 'python'
-        sys.path.append(str(root))
-        try:
-            import sgtk
-        except ImportError as err:
-            raise EnvironmentError("Failed to import tank from '%s' with error: %s", root, str(err))
-        # end
+        sgtk = cls._sgtk_module(env)
 
         for path in paths:
             try:
@@ -172,11 +252,18 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, App
             return rval
         # end ignore exceptions
 
-        # Get the most specific context, initialize an engine with it.
-        ctx = tk.context_from_path(context_path)
-
         # This is dangerous, as we are depending on magic values here
-        location_dict = self.settings_value()['multi-launchapp-location']
+        settings = self.settings_value()
+
+        # Get the most specific context, and feed it to the engine via env vars
+        # We could have entity information from a 'btank' invocation done previously, so try to use that instead
+        if settings.entity_type:
+            ctx = tk.context_from_entity(settings.entity_type, settings.entity_id)
+        else:
+            ctx = tk.context_from_path(context_path)
+        # end init context
+
+        location_dict = settings['multi-launchapp-location']
         import tank.deploy.descriptor
         try:
             dsc = tank.deploy.descriptor.get_from_location(tank.deploy.descriptor.AppDescriptor.APP, 
@@ -197,6 +284,12 @@ class TankEngineDelegate(ProcessControllerDelegate, TankDelegateCommonMixin, App
         env['TANK_CONTEXT'] = tank.context.serialize(ctx)
 
         host_app_name = self._host_app_name(actual_executable)
+        if settings.host_app_name and settings.host_app_name != host_app_name:
+            log.error("host application name passed by 'tank' commandline '%s' didn't match host application "
+                      "reported by delegate '%s' - tank disabled - please check your configuration", 
+                      settings.host_app_name, host_app_name)
+            return rval
+        # end verify application name
         env['TANK_ENGINE'] = 'tk-' + host_app_name
 
         startup_path = Path(dsc.get_path()) / 'app_specific' / host_app_name / 'startup'

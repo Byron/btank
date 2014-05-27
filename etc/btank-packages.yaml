@@ -84,6 +84,8 @@ packages:
     name: Fancy Tank Executable
     description: |
       A wrapped tank to help fix a few things, and make it relocatable, maybe.
+      Alias this package to be known as 'tank', which should in turn replace the original tank executable
+      in your projects pipeline configuration
     url: https://github.com/Byron/btank
     alias: python
     delegate: TankCommandDelegate
