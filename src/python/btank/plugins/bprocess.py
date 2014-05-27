@@ -220,6 +220,10 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         # end keep path for later
         return path
 
+    def _is_launched_by_shotgun(self):
+        """@return True if we have been launched by the browser"""
+        return bool(self.settings_value().host_app_name)
+
     @classmethod
     def _tank_instance(cls, env, paths):
         """@return the initialized tank package that exists at TANK_TREE, and the context path which created
@@ -315,22 +319,21 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         """@return a value small enough to work with shell invocation, we we are about to do so.
         The latter is only the case if shotgun invoked us through the browser.
         For some reason, if the value is higher than that, it gets replaced by the variable name ... ."""
-        if not self.settings_value().host_app_name:
+        if not self._is_launched_by_shotgun():
             return super(TankEngineDelegate, self).environment_storage_chunk_size()
         return 2048
 
-    def start(self, args, cwd, env, spawn):
+    def launch_mode(self):
         """If we are started from shotgun, make sure we are forking using the shell. Otherwise the browser 
         will never get our return code, and never think we are done.
         This is the kind of special behaviour built into tank, yet something you never want to have outside 
         of the browser-specific case."""
-        settings = self.settings_value()
-        if not settings.host_app_name:
+        if not self._is_launched_by_shotgun():
             # if we have not been started through the tank command, just go ahead as normal
             # Even if tank failed to initialize, launch the application
-            return super(TankEngineDelegate, self).start(args, cwd, env, spawn)
+            return super(TankEngineDelegate, self).launch_mode()
         # end 
-
+        
         # Browser mode: The browser has started us and is tracking our pid.
         # It will indicate we are running, and would keep doing that if we would spawn/exec as well, which is 
         # not desireable. Instead, we have to fork off a new process, and go down ourselves with 0
@@ -342,32 +345,8 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
             sys.exit(1)
         # end quit early if we failed
 
-        if sys.platform == "linux2":
-            args.append('&')
-        elif sys.platform == "darwin":
-            executable, app_args = args[0], args[1:]
-            args = ['open', '-n', '-a'] + [executable]
-            if app_args:
-                args.append('--args')
-                args.extend(app_args)
-            # end handle app_args
-        elif sys.platform == "win32":
-            args = ['start', '/B'] + args
-        # end handle shell based forking
-
-        # on posix, the shell behaviour is special, as such as args passed to the shell.
-        # For that reason, we have to convert into a string, but at least want to do it properly 
-        # in case of whitespace.
-        # NOTE: for now, we don't expect or support special shell characters
-        cmd = ''
-        for arg in args:
-            if ' ' in arg:
-                arg = '"%s"' % arg
-            cmd += arg + ' '
-        # end for each arg to sanitize
-
-        log.log(logging.TRACE, cmd)
-        return self.communicate(subprocess.Popen(cmd.strip(), shell=True, cwd = cwd, env=env))
+        # really just enforce to fork
+        return self.LAUNCH_MODE_SIBLING
 
     # -------------------------
     ## @name Subclass Interface
