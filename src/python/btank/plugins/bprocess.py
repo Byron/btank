@@ -166,7 +166,8 @@ class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ba
 
     def start(self, args, cwd, env, spawn):
         """Check if there is an override for the engine, and launch up a new process controller with our application.
-        That way, the originally configured delegate can handle the matter accordinlgy"""
+        That way, the originally configured delegate can handle the matter accordinlgy.
+        If this is not the case, just launch the tank command"""
         val = self._app.context().settings().value_by_schema(tank_engine_schema)
         if not val.host_app_name:
             return super(TankCommandDelegate, self).start(args, cwd, env, spawn)
@@ -260,11 +261,31 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         # end ignore exceptions
 
         settings = self.settings_value()
+        host_app_name = self._host_app_name(actual_executable)
+        if settings.host_app_name and settings.host_app_name != host_app_name:
+            log.error("host application name passed by 'tank' commandline '%s' didn't match host application "
+                      "reported by delegate '%s' - tank disabled - please check your configuration", 
+                      settings.host_app_name, host_app_name)
+            return rval
+        # end verify application name
 
         # Get the most specific context, and feed it to the engine via env vars
         # We could have entity information from a 'btank' invocation done previously, so try to use that instead
         if settings.entity_type:
             ctx = tk.context_from_entity(settings.entity_type, settings.entity_id)
+
+            # Deferred folder creation is a feature implemented by the launchapp, and it actually helps us 
+            # to fill the path  cache with enough information to get a context from a path.
+            # Most of the time though, applictions would be launched through shotgun, in one way or another, 
+            # which comes with a context from an entity. Let's be a good citizen though, even though I think
+            # folders should be created after the application actually launched (by the application)
+            log.debug("Creating folders for %s %s, %s" % (settings.entity_type, settings.entity_id, host_app_name))
+            try:
+                self.tank.create_filesystem_structure(settings.entity_type, settings.entity_id, engine=host_app_name)
+            except Exception as err:
+                log.error("Tank folder creation failed with error: %s", err)
+                # NOTE: tank itself aborts here, but I want to see if this is truly required
+            # end ignore errors, lets start the app
         else:
             ctx = tk.context_from_path(context_path)
         # end init context
@@ -288,14 +309,6 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         # prepare the tank environment
         import tank.context
         env['TANK_CONTEXT'] = tank.context.serialize(ctx)
-
-        host_app_name = self._host_app_name(actual_executable)
-        if settings.host_app_name and settings.host_app_name != host_app_name:
-            log.error("host application name passed by 'tank' commandline '%s' didn't match host application "
-                      "reported by delegate '%s' - tank disabled - please check your configuration", 
-                      settings.host_app_name, host_app_name)
-            return rval
-        # end verify application name
         env['TANK_ENGINE'] = 'tk-' + host_app_name
 
         startup_path = Path(dsc.get_path()) / 'app_specific' / host_app_name / 'startup'

@@ -108,6 +108,8 @@
     - You have to use 'Shotgun Save As ...' in order to land save in right folder 
     - For some reason, it doesn't allow '_-' by default (??)
 + Context can dynamically change, see 'Work Files App', or 'pick_environment' hook
+- **sinful** operations that alter shotgun and/or write files are not atomic, which means that a failing thumbnail upload can easily make a publish fail right in the end, yet plenty of files have already been written to final location on disk. Inconsistencies are thuse actively created by the system.
+- It seems that asset publishes inherit the version number of their scene file. If there is a scene file with the same name, it's an error. Most certainly, this can be customized though
 
 
 
