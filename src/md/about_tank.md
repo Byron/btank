@@ -41,6 +41,7 @@
 
 - **sinful**: to me it looks like the template system and the 'path schema' in the project configuration are different things. One is used for general paths when doing 'create paths ...' from shotgun or the commandline, the other is used in path templates for apps. This redundancy can make both go out of sync easily !! Really ? Of course they do it to have a simple way to copy skeletons automatically. But what are skeletons worth if they are not customized to the project ? It's a sin, as the path creation system should make sure paths and names are always right !
     - The implication of this is that you can specify folders structures using conditions that you can't express as templates as these conditions can't be expressed there. This forces you to have complex 'pick_environment' hooks to allow configuring specialized templates. In other words, copy-paste will be required, and your environment configuration will be bloated.
+    - It's not possible to create path templates that don't contain a slash, for example to denote the base of a filename which is supposed to be substituted. That way, you are forced to repeat yourself, further adding to the generally perceived redundancy.
 - path template system configuration is redundant, and inflexible (proof). You are forced to repeat yourself. There is a way ('inclusion'), but what's less redundant than a tree ?
 - path inference needs to know the ‘type’ of path you look at. The 'type' is the template name. This means you can't 
 - capitalization in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps). Capitalization shouldn't be important, but it is as it is used to match shotgun entity names.
@@ -70,6 +71,7 @@
 + templates are multi-root compatible, requires extended configuration style. Folder schema is multi-root too
 + templates can easily be shared, to link outputs of one application to the inputs of another
 + custom fields can be attached to entities and used as folder names
+- tank enforces that each template maps to a unique path. However, it has no understanding of whether the template refers to a directory or file, which is why it enforces 'work-arreas' to not be shared among applications.
 
 ## Configuration System
 
