@@ -40,6 +40,7 @@
 ## Templates and Folders Creation
 
 - **sinful**: to me it looks like the template system and the 'path schema' in the project configuration are different things. One is used for general paths when doing 'create paths ...' from shotgun or the commandline, the other is used in path templates for apps. This redundancy can make both go out of sync easily !! Really ? Of course they do it to have a simple way to copy skeletons automatically. But what are skeletons worth if they are not customized to the project ? It's a sin, as the path creation system should make sure paths and names are always right !
+    - The implication of this is that you can specify folders structures using conditions that you can't express as templates as these conditions can't be expressed there. This forces you to have complex 'pick_environment' hooks to allow configuring specialized templates. In other words, copy-paste will be required, and your environment configuration will be bloated.
 - path template system configuration is redundant, and inflexible (proof). You are forced to repeat yourself. There is a way ('inclusion'), but what's less redundant than a tree ?
 - path inference needs to know the ‘type’ of path you look at. The 'type' is the template name. This means you can't 
 - capitalization in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps). Capitalization shouldn't be important, but it is as it is used to match shotgun entity names.
@@ -68,6 +69,7 @@
 - special key-aliasing is required to support different settings for the same (internal) key name
 + templates are multi-root compatible, requires extended configuration style. Folder schema is multi-root too
 + templates can easily be shared, to link outputs of one application to the inputs of another
++ custom fields can be attached to entities and used as folder names
 
 ## Configuration System
 
@@ -90,6 +92,7 @@
 - Configuration is handled manually by default, and even though there are tools to help managing it, by default there is not RCS. This is inherently dangerous on sites that have many developers. `push_configuration` for instance replaces the desired target configuration with the one you are seeing, making a zip backup of the previous configuration files. The docs say nothing how to roll back using one of these, or how to verify that no one else edited them prior to that.
 + studio level base configuration can be put into git, and then used as base from which to clone when creating new configurations. Interestingly, this doesn't seem to include environments at all, at least not according to the docs. What is it worth without it ? Oh, one more example later and it seems it can do it that way. Good. Well, trying it shows that he can also copy a file path, and doesn't get that this is actually a git repository. Nonetheless, this can be fixed after the fact (by putting the repo) using a path of the form described at `tank/deploy/git_descriptor.py:34`.
     - It's actually exactly the same as what's done with `tk-config-default` or `tk-config-multiroot`
+- install command rewrites your own configuration files. This is always undesirable, as formatting can change considerably. A good system would be to write files containing the required changes based on the current settings, which is consecutively merged in  
 
 
 
