@@ -95,6 +95,7 @@
 + studio level base configuration can be put into git, and then used as base from which to clone when creating new configurations. Interestingly, this doesn't seem to include environments at all, at least not according to the docs. What is it worth without it ? Oh, one more example later and it seems it can do it that way. Good. Well, trying it shows that he can also copy a file path, and doesn't get that this is actually a git repository. Nonetheless, this can be fixed after the fact (by putting the repo) using a path of the form described at `tank/deploy/git_descriptor.py:34`.
     - It's actually exactly the same as what's done with `tk-config-default` or `tk-config-multiroot`
 - install command rewrites your own configuration files. This is always undesirable, as formatting can change considerably. A good system would be to write files containing the required changes based on the current settings, which is consecutively merged in  
+- during deferred folder creation, the launch-app (or however starts up the host application) has to unconditionally create folders for a particular entity, which adds a few seconds to the application startup time. If folder creation would be triggered at the time a template is used, and only if the folder leading up to some file doesn't exist, this could be circumvented.
 
 
 
@@ -109,19 +110,26 @@
 ## Workflow
 
 - In order to obtain shot folders, one has to perform an action manually. What you want is to set the status of the shot to something indicating it can now be handled, and have the system create the paths for you. However, folder creation is automatically done when launching an application.
-- It seems by default, new files have no name, so user is free to choose. This needs customization, but might be intended for the default configuration.
-    - You have to use 'Shotgun Save As ...' in order to land save in right folder 
-    - For some reason, it doesn't allow '_-' by default (??)
+- You have to use 'Shotgun Save As ...' in order to land save in right folder 
+- For some reason, it doesn't allow '_-' by default (??)
 + Context can dynamically change, see 'Work Files App', or 'pick_environment' hook
-- **sinful** operations that alter shotgun and/or write files are not atomic, which means that a failing thumbnail upload can easily make a publish fail right in the end, yet plenty of files have already been written to final location on disk. Inconsistencies are thuse actively created by the system.
-- It seems that asset publishes inherit the version number of their scene file. If there is a scene file with the same name, it's an error. Most certainly, this can be customized though
-
+- **sinful** operations that alter shotgun and/or write files are not atomic, which means that a failing thumbnail upload can easily make a publish fail right in the end, yet plenty of files have already been written to final location on disk. Inconsistencies are thus actively created by the system.
+- It seems that asset publishes inherit the version number of their scene file. If there is a scene file with the same name, it's an error. Most certainly, this can be customized though.
+- **sinful**: Apps providing GUI and implementing business logic do not separate the logic from the GUI, which makes it less trivial to publish properly than necessary. The non-gui publish handler for instance makes calls to qt message boxes for instance.
 
 
 ## Engines
 
 * Not all engines support `TANK_FILE_TO_OPEN`, they simply don't implement it, but delete the variable from the environment.
 
+### Nuke Engine
+
+- Publishes take a long time, it seems slower than necessary (not talking about time it takes to upload)
+    - 'Checking files' is slow, as well as file copy. 250 files with 6.1 MB total size took about 30 seconds for checking, and 5 for copying (on an SSD)
+    - It rerenders the entire sequence to get a movie file, instead of using the required rendered images to generate a movie from these.
+    + on the plus side, while uploading the user can keep working on the file.
+- image resolutions are configured per app and step, it feels like it should just be one of many possible resolutions, which can be mixed and matched with output specifications.
+- The nuke write node has it's own output specifications, which need to come from the configuration. It seems odd, as such a thing influences the entire project, so output specifications or resolutions want to be configured for the entire project, and used in various places. Not having it that way adds to redundancy, which makes it harder to keep configuration consistent.
 
 
 # Interesting - for evaluation
