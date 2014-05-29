@@ -70,7 +70,8 @@ packages:
       - tank-studio-install
     boot:
       # make sure standard delegates are available to help dealing with tank
-      plugin_paths: '{settings-files.btank-packages.dirname}/../src/python/btank/plugins/bprocess.py'
+      python_paths: '{settings-files.btank-packages.dirname}/../src/python'
+      import: btank-plugins.bprocess-delegates
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
       Or in other words: Advantages of bcore with the gui features of tank.

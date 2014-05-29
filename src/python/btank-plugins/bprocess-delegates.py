@@ -17,7 +17,9 @@ import bapp
 from butility import (Path,
                       abstractmethod,
                       update_env_path)
-from bprocess import process_schema
+from bprocess import (process_schema,
+                      ProcessController,
+                      ProcessControllerDelegate)
 from bkvstore import KeyValueStoreSchema
 from bapp import ApplicationSettingsMixin
 
@@ -281,7 +283,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
             # folders should be created after the application actually launched (by the application)
             log.debug("Creating folders for %s %s, %s" % (settings.entity_type, settings.entity_id, host_app_name))
             try:
-                self.tank.create_filesystem_structure(settings.entity_type, settings.entity_id, engine=host_app_name)
+                tk.create_filesystem_structure(settings.entity_type, settings.entity_id, engine=host_app_name)
             except Exception as err:
                 log.error("Tank folder creation failed with error: %s", err)
                 # NOTE: tank itself aborts here, but I want to see if this is truly required
