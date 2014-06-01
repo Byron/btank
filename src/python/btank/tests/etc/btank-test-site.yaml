@@ -1,0 +1,31 @@
+packages:
+  ##########################
+  tank-code-repository:  ##
+  ########################
+    # trees: to be set in parent assembly
+    name: Tank Repository
+    description: |
+      The actual tk-core repository clone
+    url: https://github.com/shotgunsoftware/tk-core
+    requires:
+      - shotgun-python-api
+
+  #########################
+  btank-package-tests:  ##
+  #######################
+    trees: '{settings-files.btank-test-site.dirname}/../../../../..'
+    description: |
+      A meta-package with all dependencies to allow testing
+    requires:
+      - 
+      - tank-code-repository
+    environment:
+      variables:
+        PYTHONPATH: src/python
+
+  ###############
+  nosetests:  ##
+  #############
+    # Just append our test-setup to nose
+    requires:
+      - btank-package-tests
