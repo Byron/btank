@@ -32,7 +32,8 @@
 ## `tank` commandline tool
 
 - tank command subcommands are well documented online, but non-standard (e.g. no usage). The reason for this is that tank is parsing it's commandline arguments itself ... doing worse than what can be done with standard libraries. It's annoying not to get a list of available commands, but to have to [look them up online](https://toolkit.shotgunsoftware.com/entries/24024798-Administering-and-Configuring-Sgtk).
-- tank commandline tools are based on a lot of interaction, querying the user for input. This actively discourages their integration into scripts, and kind of misses the target group
++ implementations of tank commandline tools have an interactive and an API mode, which caters both humans and API users. 
+    - However, this seems to be depending on the command, not all can be run in non-interactive mode as it needs special implementation for some reason.
 - Text files created by setup_project are executable for some reason
 
 
