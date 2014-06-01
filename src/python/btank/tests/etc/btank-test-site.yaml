@@ -1,15 +1,4 @@
 packages:
-  ##########################
-  tank-code-repository:  ##
-  ########################
-    # trees: to be set in parent assembly
-    name: Tank Repository
-    description: |
-      The actual tk-core repository clone
-    url: https://github.com/shotgunsoftware/tk-core
-    requires:
-      - shotgun-python-api
-
   #########################
   btank-package-tests:  ##
   #######################
@@ -17,8 +6,9 @@ packages:
     description: |
       A meta-package with all dependencies to allow testing
     requires:
-      - 
-      - tank-code-repository
+      # must be defined by parent assembly, see bdep-nonfree-assembly for example configuration
+      # It's assume to provide unittest-helpers has well
+      - tk-core-package
     environment:
       variables:
         PYTHONPATH: src/python
