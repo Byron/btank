@@ -153,7 +153,7 @@
 <h1 id="about-tank">About Tank</h1>
 <h2 id="coding-and-software-organization">Coding and Software Organization</h2>
 <ul>
-<li>tk-core by now has a good test suite !</li>
+<li>tk-core by now has a test suite - measured coverage is an incredible <strong>43%</strong></li>
 <li>Haven't seen tests in any app or hook. Testing is done manually, and in conjunction with the duplicated code portion, will eventually lead to undetected bugs.</li>
 <li>TDs can reload code in-app, it's nice for them as they are not used to test-driven workflows anyway.</li>
 <li>docs are nicely written and <a href="https://tank.zendesk.com/entries/23874562">good looking</a></li>
@@ -161,7 +161,9 @@
 <li>Non test-driven development is encouraged by providing means to reload code while the application is running. This is probably what led to tanks major sin, see top of the document.</li>
 <li>Probably as some kind of workaround, required frameworks (if provided by tank) can't just be imported, but need a custom method to be called. They also have non-python compatible characters in their names, like dashes ... (maybe there is a way to convert them to their python names procedurally).<ul>
 <li>This makes deriving hooks from one another special too - you can inherit from the hook you are overriding, but someone else can't inherit from you as there is exactly one level of overrides for hooks.</li>
+<li>As it's special, hook derivation doesn't work for core hooks ! It's clearly a 'special case bug'</li>
 <li>There is a special syntax which allows multi-inheritance, which greatly re-invents the wheel. Inside of the hook, it's very abstract what your base actually is, and even worse, can change without the code knowing. Another form of redundancy.</li>
+<li>reloading of all code is possible this way, but requires all in-memory instance to be closed/tossed out before you see an effect.</li>
 </ul>
 </li>
 <li>Hooks can access the parent app through <code>self.parent</code>, which doesn't help in isolating them.</li>
@@ -182,12 +184,19 @@
 <h2 id="tank-commandline-tool"><code>tank</code> commandline tool</h2>
 <ul>
 <li>tank command subcommands are well documented online, but non-standard (e.g. no usage). The reason for this is that tank is parsing it's commandline arguments itself ... doing worse than what can be done with standard libraries. It's annoying not to get a list of available commands, but to have to <a href="https://toolkit.shotgunsoftware.com/entries/24024798-Administering-and-Configuring-Sgtk">look them up online</a>.</li>
-<li>tank commandline tools are based on a lot of interaction, querying the user for input. This actively discourages their integration into scripts, and kind of misses the target group</li>
+<li>implementations of tank commandline tools have an interactive and an API mode, which caters both humans and API users. <ul>
+<li>However, this seems to be depending on the command, not all can be run in non-interactive mode as it needs special implementation for some reason.</li>
+</ul>
+</li>
 <li>Text files created by setup_project are executable for some reason</li>
 </ul>
 <h2 id="templates-and-folders-creation">Templates and Folders Creation</h2>
 <ul>
-<li><strong>sinful</strong>: to me it looks like the template system and the 'path schema' in the project configuration are different things. One is used for general paths when doing 'create paths ...' from shotgun or the commandline, the other is used in path templates for apps. This redundancy can make both go out of sync easily !! Really ? Of course they do it to have a simple way to copy skeletons automatically. But what are skeletons worth if they are not customized to the project ? It's a sin, as the path creation system should make sure paths and names are always right !</li>
+<li><strong>sinful</strong>: to me it looks like the template system and the 'path schema' in the project configuration are different things. One is used for general paths when doing 'create paths ...' from shotgun or the commandline, the other is used in path templates for apps. This redundancy can make both go out of sync easily !! Really ? Of course they do it to have a simple way to copy skeletons automatically. But what are skeletons worth if they are not customized to the project ? It's a sin, as the path creation system should make sure paths and names are always right !<ul>
+<li>The implication of this is that you can specify folders structures using conditions that you can't express as templates as these conditions can't be expressed there. This forces you to have complex 'pick_environment' hooks to allow configuring specialized templates. In other words, copy-paste will be required, and your environment configuration will be bloated.</li>
+<li>It's not possible to create path templates that don't contain a slash, for example to denote the base of a filename which is supposed to be substituted. That way, you are forced to repeat yourself, further adding to the generally perceived redundancy.</li>
+</ul>
+</li>
 <li>path template system configuration is redundant, and inflexible (proof). You are forced to repeat yourself. There is a way ('inclusion'), but what's less redundant than a tree ?</li>
 <li>path inference needs to know the ‘type’ of path you look at. The 'type' is the template name. This means you can't </li>
 <li>capitalization in dict keys [fields] for path template system (used to differentiate shotgun entity types [context fields] from custom template fields manipulated by apps). Capitalization shouldn't be important, but it is as it is used to match shotgun entity names.</li>
@@ -202,7 +211,7 @@
 <li>it's possible to use information from the context in these paths for substitution (similar to what seems to work in many places where paths are involved)</li>
 </ul>
 </li>
-<li><strong>sinful</strong> Tank is using a <code>path_cache.db</code>, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to <a href="http://sqlite.org/faq.html#q5">fail in concurrent situations</a>.</li>
+<li><strong>sinful</strong> Tank is using a <code>path_cache.db</code>, which maps local paths to the entities they represent. This is a huge problem, as it can easily go out of sync with what's actually on the filesystem. When that happens, think start to fail. Besides, sqlite is used on a shared space, which is guaranteed to <a href="http://sqlite.org/faq.html#q5">fail in concurrent situations</a>. To add insult to injury, it's not a cache, but an index that is required for tank to work. Throw away a cache, and it will be regenerated, throw away an index, and you are in trouble !</li>
 <li>support for optional fields (<code>foo[_{optional}]</code> becomes <code>foo</code> if optional field is not present)</li>
 <li>overly complicated filter specification in entity query</li>
 <li>can refer to entities defined in any parents, somehow it can substitute into <em>the right thing™</em></li>
@@ -216,8 +225,10 @@
 <li>delegation of any corresponding action, using a hook</li>
 <li>substitution keys in templates have meta-data on their own, which makes templates more readable</li>
 <li>special key-aliasing is required to support different settings for the same (internal) key name</li>
-<li>templates are multi-root compatible, requires extended configuration style</li>
-<li>seems to imply that folder creation is not multi-root compatible</li>
+<li>templates are multi-root compatible, requires extended configuration style. Folder schema is multi-root too</li>
+<li>templates can easily be shared, to link outputs of one application to the inputs of another</li>
+<li>custom fields can be attached to entities and used as folder names</li>
+<li>tank enforces that each template maps to a unique path. However, it has no understanding of whether the template refers to a directory or file, which is why it enforces 'work-arreas' to not be shared among applications.</li>
 </ul>
 <h2 id="configuration-system">Configuration System</h2>
 <ul>
@@ -246,25 +257,39 @@
 <li>It's actually exactly the same as what's done with <code>tk-config-default</code> or <code>tk-config-multiroot</code></li>
 </ul>
 </li>
+<li>install command rewrites your own configuration files. This is always undesirable, as formatting can change considerably. A good system would be to write files containing the required changes based on the current settings, which is consecutively merged in  </li>
+<li>during deferred folder creation, the launch-app (or however starts up the host application) has to unconditionally create folders for a particular entity, which adds a few seconds to the application startup time. If folder creation would be triggered at the time a template is used, and only if the folder leading up to some file doesn't exist, this could be circumvented.</li>
 </ul>
 <h2 id="application-launcher">Application Launcher</h2>
 <ul>
 <li>can only launch packaged programs on OSX, like <em>/Applications/Nuke8.0v4/Nuke8.0v4.app</em>, whereas <em>/Applications/Nuke8.0v4/Nuke8.0v4.app/Nuke8.0v4</em> doesn't work (but works on commandline)</li>
 <li>it takes about 5s until the application even starts to load when launched from the shotgun web gui</li>
+<li>app launcher application will alter the current process' environment, which makes it somewhat dangerous to use from within an application (i.e. to start RV from within nuke, in a pipeline-conform way)</li>
 </ul>
 <h2 id="workflow">Workflow</h2>
 <ul>
 <li>In order to obtain shot folders, one has to perform an action manually. What you want is to set the status of the shot to something indicating it can now be handled, and have the system create the paths for you. However, folder creation is automatically done when launching an application.</li>
-<li>It seems by default, new files have no name, so user is free to choose. This needs customization, but might be intended for the default configuration.<ul>
 <li>You have to use 'Shotgun Save As ...' in order to land save in right folder </li>
 <li>For some reason, it doesn't allow '_-' by default (??)</li>
-</ul>
-</li>
 <li>Context can dynamically change, see 'Work Files App', or 'pick_environment' hook</li>
+<li><strong>sinful</strong> operations that alter shotgun and/or write files are not atomic, which means that a failing thumbnail upload can easily make a publish fail right in the end, yet plenty of files have already been written to final location on disk. Inconsistencies are thus actively created by the system.</li>
+<li>It seems that asset publishes inherit the version number of their scene file. If there is a scene file with the same name, it's an error. Most certainly, this can be customized though.</li>
+<li><strong>sinful</strong>: Apps providing GUI and implementing business logic do not separate the logic from the GUI, which makes it less trivial to publish properly than necessary. The non-gui publish handler for instance makes calls to qt message boxes for instance.</li>
 </ul>
 <h2 id="engines">Engines</h2>
 <ul>
 <li>Not all engines support <code>TANK_FILE_TO_OPEN</code>, they simply don't implement it, but delete the variable from the environment.</li>
+</ul>
+<h3 id="nuke-engine">Nuke Engine</h3>
+<ul>
+<li>Publishes take a long time, it seems slower than necessary (not talking about time it takes to upload)<ul>
+<li>'Checking files' is slow, as well as file copy. 250 files with 6.1 MB total size took about 30 seconds for checking, and 5 for copying (on an SSD)</li>
+<li>It rerenders the entire sequence to get a movie file, instead of using the required rendered images to generate a movie from these.</li>
+<li>on the plus side, while uploading the user can keep working on the file.</li>
+</ul>
+</li>
+<li>image resolutions are configured per app and step, it feels like it should just be one of many possible resolutions, which can be mixed and matched with output specifications.</li>
+<li>The nuke write node has it's own output specifications, which need to come from the configuration. It seems odd, as such a thing influences the entire project, so output specifications or resolutions want to be configured for the entire project, and used in various places. Not having it that way adds to redundancy, which makes it harder to keep configuration consistent.</li>
 </ul>
 <h1 id="interesting-for-evaluation">Interesting - for evaluation</h1>
 <ul>
