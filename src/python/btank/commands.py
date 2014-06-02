@@ -6,10 +6,13 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-from __future__ import unicode_literals
-from butility.future import str
+# from __future__ import unicode_literals
+# NO: tank needs strings for the most part, and we convert explicitly
+# from butility.future import str
 
 __all__ = ['SetupTankProject']
+
+import sys
 
 from butility import (DictObject,
                       Path)
@@ -19,6 +22,7 @@ from tank.deploy.tank_commands.setup_project import SetupProjectAction
 import tank.platform.constants as constants
 
 from .schema import setup_project_schema
+from .utility import platform_tank_map
 
 
 class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
@@ -42,7 +46,6 @@ class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
     ## it will be a 'shallow' copy, using the studio installation
     tank_subtree = 'tank'
 
-    
     ## -- End Configuration -- @}
 
 
@@ -154,23 +157,31 @@ class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
         # setup parameters
         # Note that the storage roots will just remain unchanged until everything was created
         # We will post-process the roots.yml to match what's configured for the project
-        params = {    'project_id':  project_id,
-                      'project_folder_name': project_folder_name,
-                      'config_uri':  self._project_config_uri(sg, log, settings, project),
-                      'config_path_mac':  str(tank_conftree('mac_path')),
-                      'config_path_linux':  str(tank_conftree('linux_path')),
-                      'config_path_win':  str(tank_conftree('windows_path'))}
+        params = dict(project_id= project_id,
+                      project_folder_name=str(project_folder_name),
+                      config_uri=str(self._project_config_uri(sg, log, settings, project)),
+                      config_path_mac=str(tank_conftree('mac_path')),
+                      config_path_linux=str(tank_conftree('linux_path')),
+                      config_path_win=str(tank_conftree('windows_path')))
 
-        # actually, they return nothing, but we know well enough how to deal with it
+        # For the next step to work, tank really wants the project directory to exist. Fair enough
+        tank_os_name = platform_tank_map[sys.platform]
+        project_os_root = project_roots['%s_path' % tank_os_name]
+        try:
+            project_os_root.mkdir()
+        except OSError as err:
+            raise OSError("Require write permissions on '%s'" % project_os_root.dirname())
+        # end
+
+        # nothing useful in return
         self.run_noninteractive(log, params)
+
 
         # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
         # This kind of forces it to be stable. This would feel better to have an official function to do it ... .
-        os_root = params['config_%s_path' % {  'darwin': 'mac',
-                                               'linux': 'linux', 
-                                               'linux2': 'linux', 
-                                               'win32': 'windows'}[os.name]]
-        roots_file = Path(os_root) / 'core' / 'roots.yml'
+        tank_os_root = Path(params['config_%s_path' % tank_os_name])
+
+        roots_file = tank_os_root / 'core' / 'roots.yml'
         assert roots_file.isfile(), "Didn't find roots file at '%s'" % roots_file
 
         try:

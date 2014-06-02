@@ -6,7 +6,7 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-__all__ = ['core_hook_type']
+__all__ = ['core_hook_type', 'platform_tank_map']
 
 import inspect
 
@@ -17,6 +17,12 @@ from butility import Path
 from sgtk import Hook
 from sgtk import loader
 
+
+## Maps sys.platform to names used in tank and shotgun.
+platform_tank_map = dict(  darwin='mac',
+                           linux='linux', 
+                           linux2='linux', 
+                           win32='windows')
 
 def core_hook_type():
     """When executed from a core hook, it will return the BaseType from which your core hook

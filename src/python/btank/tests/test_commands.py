@@ -6,12 +6,17 @@
 @author Sebastian Thiel
 @copyright [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl.html)
 """
-from __future__ import unicode_literals
-from butility.future import str
+# Can't use this, as dict lookups don't work the same way. Mixing is not a good idea here ... 
+# This stays python 2 !
+# from __future__ import unicode_literals
+# from butility.future import str
 __all__ = []
 
 import os
 import logging
+from copy import deepcopy
+
+from mock import Mock
 
 from .base import TankTestCase
 import bapp
@@ -23,7 +28,7 @@ from bapp.tests import with_application
 from bcontext import ApplyChangeContext
 
 from tank.util import shotgun
-
+import tank.platform.constants as constants
 
 log = logging.getLogger('btank.tests.test_base')
 
@@ -33,7 +38,7 @@ from btank.commands import *
 
 
 
-class CommandTests(TankTestCase, SetupTankProject):
+class CommandTests(TankTestCase):
 
     # -------------------------
     ## @name Command Implementation
@@ -53,6 +58,21 @@ class CommandTests(TankTestCase, SetupTankProject):
         # end
         shotgun.create_sg_app_store_connection = no_way
 
+        # Fix the mock db - it must copy return values, no matter what !
+        class CopyDict(dict):
+            __slots__ = ()
+            
+            def __getitem__(self, name):
+                return deepcopy(super(CopyDict, self).__getitem__(name))
+
+            def values(self):
+                return deepcopy(super(CopyDict, self).values())
+
+        # end class CopyDict
+
+
+        self._sg_mock_db = CopyDict()
+
     # -------------------------
     ## @name Utilities
     # @{
@@ -68,11 +88,11 @@ class CommandTests(TankTestCase, SetupTankProject):
         if os.name == 'posix':
             bootrapper_path.symlink(posix_wrapper_location)
         else:
-            posix_wrapper_location.write_text("Just a dummy, can't do fancy symlinks on windows", DEFAULT_ENCODING)
+            posix_wrapper_location.write_text("Just a dummy, can't do fancy symlinks on windows")
         # end on windows, we cannot make the symlink
 
         win_wrapper_location = posix_wrapper_location + '.py'
-        (tree / '.bprocess_path').write_text(str(bootrapper_path), DEFAULT_ENCODING)
+        (tree / '.bprocess_path').write_text(str(bootrapper_path))
         bootrapper_path.copyfile(win_wrapper_location)
 
         return posix_wrapper_location, win_wrapper_location
@@ -104,19 +124,24 @@ class CommandTests(TankTestCase, SetupTankProject):
         # prepare the mock db - reuse the tank implementation as it's already what tank needs
         project = {      'type': 'Project',
                          'id': 1,
-                         'tank_name': 'project_directory',
+                         'tank_name': None,
                          'name': 'project_name' }
 
         self._sg_mock_db[('Project', 1)] = project
-        self._sg_mock_db[('LocalStorage', 1)] = {'code' : 'primary',
+        self._sg_mock_db[('LocalStorage', 1)] = {'code' : constants.PRIMARY_STORAGE_NAME,
                                                  'mac_path' : rw_dir,
                                                  'linux_path' : rw_dir, 
                                                  'windows_path' : rw_dir}
 
-        sg = self._setup_sg_mock()
+        sg = self.sg_mock
+        sg.server_info = Mock()
+        sg.server_info.__getitem__ = Mock(side_effect=[(4, 3, 9)])
+        sg.schema_read = Mock(side_effect=[('PublishedFile','PublishedFileType', 'PublishedFileDependency')])
+
         assert sg.find_one('Project', [['id', 'is', 1]])
 
-        self.failUnlessRaises(ValueError, self.handle_project_setup, sg, log, project['id'])
+        spc = SetupTankProject()
+        self.failUnlessRaises(ValueError, spc.handle_project_setup, sg, log, project['id'])
 
         # provide the required information
         app = bapp.main()
@@ -128,9 +153,9 @@ class CommandTests(TankTestCase, SetupTankProject):
 
         ApplyChangeContext('project-setup-settings').setup(     app.context(), 
                                                                 required_info,
-                                                                self.settings_schema())
+                                                                spc.settings_schema())
 
-        tk = self.handle_project_setup(sg, log, project['id'])
+        tk = spc.handle_project_setup(sg, log, project['id'])
         assert tk, "expected a valid tank instance as return value"
 
         
