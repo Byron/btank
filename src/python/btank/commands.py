@@ -18,14 +18,15 @@ from butility import (DictObject,
                       Path)
 
 from bapp import ApplicationSettingsMixin
-from tank.deploy.tank_commands.setup_project import SetupProjectAction
+from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
 from .schema import setup_project_schema
 from .utility import platform_tank_map
 
 
-class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
+
+class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixin):
     """Should run a reaction to a newly created Shotgun project and sets it up to work with btank.
     As opposed to the default implementation, we will make it use our own, pre-existing shotgun connection,
     and use kvstore and environmental information.
@@ -78,6 +79,27 @@ class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
     # -------------------------
     ## @name Utilities
     # @{
+
+    def _handle_monkey_patch(self, undo_info = None):
+        """Make sure tank doens't get into our way.
+        As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
+        the special way of tank handling it's bootstrapping is not required.
+        So lets shut it off
+        """
+        fun_name = '_get_current_core_file_location'
+        if undo_info:
+            setattr(setup_project, fun_name, undo_info)
+        else:
+            prev_fun = getattr(setup_project, fun_name, None)
+            assert prev_fun, "tank code base changed - monkey patcher needs a review !"
+            def return_locations():
+                msg = 'btank makes this obsolete'
+                return dict((p, msg) for p in ('Windows', 'Darwin', 'Linux'))
+            # end
+                
+            setattr(setup_project, fun_name, return_locations)
+            return prev_fun
+        # end do or undo
 
     def _sanitize_settings(self, settings):
         """Assure we have all required values actually set, and return possibly sanitized values"""
@@ -173,8 +195,14 @@ class SetupTankProject(SetupProjectAction, ApplicationSettingsMixin):
             raise OSError("Require write permissions on '%s'" % project_os_root.dirname())
         # end
 
+        undo_info = self._handle_monkey_patch()
+
         # nothing useful in return
-        self.run_noninteractive(log, params)
+        try:
+            self.run_noninteractive(log, params)
+        finally:
+            self._handle_monkey_patch(undo_info)
+        # end assure monkey-patch gets undone
 
 
         # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places

@@ -50,7 +50,9 @@ class CommandTests(TankTestCase):
     ## -- End Command Implementation -- @}
 
     def setUp(self, *args, **kwargs):
-        """Make sure shotgun app store connections are mocked as well"""
+        """Make sure shotgun app store connections are mocked as well.
+        We also apply monkey-patches, and don't undo them !
+        """
         super(CommandTests, self).setUp(*args, **kwargs)
 
         def no_way(*args, **kwargs):
@@ -137,6 +139,8 @@ class CommandTests(TankTestCase):
         sg.server_info = Mock()
         sg.server_info.__getitem__ = Mock(side_effect=[(4, 3, 9)])
         sg.schema_read = Mock(side_effect=[('PublishedFile','PublishedFileType', 'PublishedFileDependency')])
+        sg.create = Mock(side_effect=[dict(id=42)])
+        sg.base_url = 'test-site.deluxe'
 
         assert sg.find_one('Project', [['id', 'is', 1]])
 
