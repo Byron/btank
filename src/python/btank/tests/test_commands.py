@@ -28,6 +28,7 @@ from bapp.tests import with_application
 from bcontext import ApplyChangeContext
 
 from tank.util import shotgun
+from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
 log = logging.getLogger('btank.tests.test_base')
@@ -55,10 +56,19 @@ class CommandTests(TankTestCase):
         """
         super(CommandTests, self).setUp(*args, **kwargs)
 
+        fun_name = 'create_sg_app_store_connection'
         def no_way(*args, **kwargs):
             raise AssertionError("You can't get out of the prison")
         # end
-        shotgun.create_sg_app_store_connection = no_way
+
+        errmsg = "Money patcher needs an update"
+        assert hasattr(shotgun, fun_name), errmsg
+        setattr(shotgun, fun_name, no_way)
+
+        # disable this - we don't really have an install location here
+        fun_name = '_install_environment'
+        assert hasattr(setup_project, fun_name), errmsg
+        setattr(setup_project, fun_name, lambda *args: None )
 
         # Fix the mock db - it must copy return values, no matter what !
         class CopyDict(dict):
@@ -131,9 +141,9 @@ class CommandTests(TankTestCase):
 
         self._sg_mock_db[('Project', 1)] = project
         self._sg_mock_db[('LocalStorage', 1)] = {'code' : constants.PRIMARY_STORAGE_NAME,
-                                                 'mac_path' : rw_dir,
-                                                 'linux_path' : rw_dir, 
-                                                 'windows_path' : rw_dir}
+                                                 'mac_path' : str(rw_dir),
+                                                 'linux_path' : str(rw_dir), 
+                                                 'windows_path' : str(rw_dir)}
 
         sg = self.sg_mock
         sg.server_info = Mock()

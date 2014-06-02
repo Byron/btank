@@ -18,6 +18,7 @@ from butility import (DictObject,
                       Path)
 
 from bapp import ApplicationSettingsMixin
+from bkvstore import YAMLStreamSerializer
 from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
@@ -93,6 +94,7 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
             prev_fun = getattr(setup_project, fun_name, None)
             assert prev_fun, "tank code base changed - monkey patcher needs a review !"
             def return_locations():
+                # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
                 msg = 'btank makes this obsolete'
                 return dict((p, msg) for p in ('Windows', 'Darwin', 'Linux'))
             # end
@@ -207,9 +209,9 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
 
         # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
         # This kind of forces it to be stable. This would feel better to have an official function to do it ... .
-        tank_os_root = Path(params['config_%s_path' % tank_os_name])
+        tank_os_root = Path(params['config_path_%s' % tank_os_name])
 
-        roots_file = tank_os_root / 'core' / 'roots.yml'
+        roots_file = tank_os_root / 'config' / 'core' / 'roots.yml'
         assert roots_file.isfile(), "Didn't find roots file at '%s'" % roots_file
 
         try:
