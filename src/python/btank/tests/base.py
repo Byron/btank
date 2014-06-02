@@ -15,7 +15,6 @@ import tank_test.tank_test_base
 from butility.tests import TestCase
 from butility import Path
 
-
 # It's setting up just one work space - for now we just follow this example and live with tests that possibly
 # influence each other.
 ##############################################
@@ -26,7 +25,7 @@ class TankTestCase(tank_test.tank_test_base.TankTestBase, TestCase):
     """Provides a fully mocked tank, see tk-core/tests/python/tank_test/example_tests.py for more"""
     __slots__ = ()
 
-    fixture_root = Path(__file__)
+    fixture_root = Path(__file__).dirname()
 
 # end class TankTestCase
 

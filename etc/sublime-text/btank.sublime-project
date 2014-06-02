@@ -16,5 +16,9 @@
 			"follow_symlinks": true,
 			"path": "/Users/byron/Documents/dev/ext/shotgun-software/tk-core",
 		},
+		{
+			"follow_symlinks": true,
+			"path": "/Users/byron/Documents/dev/bdevel/lib/components/core",
+		},
 	]
 }

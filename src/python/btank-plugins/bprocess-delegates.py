@@ -154,7 +154,7 @@ class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ba
 
             # usually, this is done during prepare_context(), but we don't need the controller to react to 
             # context changes and do plenty of extra work
-            ctx = self.DelegateContextOverrideType('tank-engine-information').setup(
+            ctx = self.ApplyChangeContextType('tank-engine-information').setup(
                                                                                 self._app.context().settings(),
                                                                                 set_overrides, 
                                                                                 tank_engine_schema)

@@ -17,5 +17,6 @@ from butility import Path
 root_key = 'btank'
 
 
-setup_project_schema = KeyValueStoreSchema(root_key, dict('studio_bootstrap_path' : Path,
-                                                          'studio_configuration_uri' : str))
+# this is primiarily for posix systems, but should work on windows as well.
+setup_project_schema = KeyValueStoreSchema(root_key, dict(studio_bootstrapper_path = Path,
+                                                          studio_configuration_uri = str))
