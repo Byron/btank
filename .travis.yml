@@ -13,6 +13,6 @@ install:
   # prepare fixture, which has to be downloaded manually
   - src/python/btank/tests/fixtures/setup_fixtures
 script:
-  - nosetests src/python --with-coverage
+  - 'cd src/python/btank/tests && nosetests --with-coverage . utility/patch/test_patch.py'
 after_success:
   - coveralls

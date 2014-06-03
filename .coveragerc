@@ -1,0 +1,12 @@
+[run]
+source = btank
+
+; to make nosetests happy
+[report]
+omit = 
+	*/*yaml*
+	*/*tank*
+	*/future/*
+	*/tests/*
+    */python?.?/*
+    */site-packages/nose/*
