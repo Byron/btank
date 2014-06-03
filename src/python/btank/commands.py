@@ -13,6 +13,7 @@
 __all__ = ['SetupTankProject']
 
 import sys
+from contextlib import contextmanager
 
 from butility import (DictObject,
                       Path)
@@ -81,26 +82,26 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
     ## @name Utilities
     # @{
 
-    def _handle_monkey_patch(self, undo_info = None):
+    @contextmanager
+    def _tank_monkey_patch(self):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
-        the special way of tank handling it's bootstrapping is not required.
+        the special way of tank handling its bootstrapping is not required.
         So lets shut it off
         """
         fun_name = '_get_current_core_file_location'
-        if undo_info:
-            setattr(setup_project, fun_name, undo_info)
-        else:
-            prev_fun = getattr(setup_project, fun_name, None)
-            assert prev_fun, "tank code base changed - monkey patcher needs a review !"
-            def return_locations():
-                # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
-                msg = 'btank makes this obsolete'
-                return dict((p, msg) for p in ('Windows', 'Darwin', 'Linux'))
-            # end
-                
-            setattr(setup_project, fun_name, return_locations)
-            return prev_fun
+        prev_fun = getattr(setup_project, fun_name, None)
+        assert prev_fun, "tank code base changed - monkey patcher needs a review !"
+
+        def return_locations():
+            # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
+            msg = 'btank makes this obsolete'
+            return dict((p, msg) for p in ('Windows', 'Darwin', 'Linux'))
+        # end
+            
+        setattr(setup_project, fun_name, return_locations)
+        yield
+        setattr(setup_project, fun_name, prev_fun)
         # end do or undo
 
     def _sanitize_settings(self, settings):
@@ -197,13 +198,9 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
             raise OSError("Require write permissions on '%s'" % project_os_root.dirname())
         # end
 
-        undo_info = self._handle_monkey_patch()
-
         # nothing useful in return
-        try:
+        with self._tank_monkey_patch():
             self.run_noninteractive(log, params)
-        finally:
-            self._handle_monkey_patch(undo_info)
         # end assure monkey-patch gets undone
 
 
