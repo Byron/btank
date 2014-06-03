@@ -20,6 +20,7 @@ from butility import (DictObject,
 
 from bapp import ApplicationSettingsMixin
 from bkvstore import YAMLStreamSerializer
+import tank
 from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
@@ -28,7 +29,7 @@ from .utility import platform_tank_map
 
 
 
-class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixin):
+class SetupTankProject(ApplicationSettingsMixin):
     """Should run a reaction to a newly created Shotgun project and sets it up to work with btank.
     As opposed to the default implementation, we will make it use our own, pre-existing shotgun connection,
     and use kvstore and environmental information.
@@ -182,12 +183,12 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
         # setup parameters
         # Note that the storage roots will just remain unchanged until everything was created
         # We will post-process the roots.yml to match what's configured for the project
-        params = dict(project_id= project_id,
-                      project_folder_name=str(project_folder_name),
-                      config_uri=str(self._project_config_uri(sg, log, settings, project)),
-                      config_path_mac=str(tank_conftree('mac_path')),
-                      config_path_linux=str(tank_conftree('linux_path')),
-                      config_path_win=str(tank_conftree('windows_path')))
+        params = dict(project_id          = project_id,
+                      project_folder_name = str(project_folder_name),
+                      config_uri          = str(self._project_config_uri(sg, log, settings, project)),
+                      config_path_mac     = str(tank_conftree('mac_path')),
+                      config_path_linux   = str(tank_conftree('linux_path')),
+                      config_path_win     = str(tank_conftree('windows_path')))
 
         # For the next step to work, tank really wants the project directory to exist. Fair enough
         tank_os_name = platform_tank_map[sys.platform]
@@ -199,8 +200,10 @@ class SetupTankProject(setup_project.SetupProjectAction, ApplicationSettingsMixi
         # end
 
         # nothing useful in return
+        cmd = tank.get_command('setup_project')
+        cmd.set_logger(log)
         with self._tank_monkey_patch():
-            self.run_noninteractive(log, params)
+            cmd.execute(params)
         # end assure monkey-patch gets undone
 
 
