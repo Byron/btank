@@ -18,5 +18,7 @@ root_key = 'btank'
 
 
 # this is primiarily for posix systems, but should work on windows as well.
-setup_project_schema = KeyValueStoreSchema(root_key, dict(studio_bootstrapper_path = Path,
-                                                          studio_configuration_uri = str))
+setup_project_schema = KeyValueStoreSchema('%s.etup-project' % root_key, 
+                                                     dict(bootstrapper = dict(posix_path   = Path,
+                                                                              windows_path = Path),
+                                                          configuration_uri = str))

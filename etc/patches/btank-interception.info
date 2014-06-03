@@ -1,0 +1,4 @@
+This patch makes sure that, except for the high-speed caching related operations tank performs, tank starts up 
+using the bprocess bootstrapper.
+
+The delegate is configured to intercept additional calls, most notably the application launches.

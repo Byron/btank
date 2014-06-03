@@ -25,8 +25,10 @@ from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
 from .schema import setup_project_schema
-from .utility import platform_tank_map
-
+from .utility import (platform_tank_map,
+                      link_bootstrapper)
+from .utility.patch import PatchSet
+from butility.compat import StringIO
 
 
 class SetupTankProject(ApplicationSettingsMixin):
@@ -73,8 +75,11 @@ class SetupTankProject(ApplicationSettingsMixin):
 
     def _project_config_uri(self, sg, log, settings, project):
         """@return a tank-project-setup digestable URI to the configuration it should use."""
-        return settings.studio_configuration_uri
+        return settings.configuration_uri
 
+    def _project_bootstrapper_location(self, sg, log, settings, project):
+        """@return relative or absolute path to the posix and non-posix """
+        
 
     ## -- End Subclass Interface -- @}
 
@@ -108,7 +113,7 @@ class SetupTankProject(ApplicationSettingsMixin):
     def _sanitize_settings(self, settings):
         """Assure we have all required values actually set, and return possibly sanitized values"""
         missing = list()
-        for required_setting in ('studio_configuration_uri', 'studio_bootstrapper_path'):
+        for required_setting in ('configuration_uri', 'bootstrapper'):
             if not settings[required_setting]:
                 missing.append(required_setting)
             # end
@@ -119,9 +124,9 @@ class SetupTankProject(ApplicationSettingsMixin):
                                                                                     for m in missing))
         # end
 
-        if not settings.studio_bootstrapper_path.isfile():
-            raise ValueError("Bootstrapper at '%s' was not accessible - it must be visible"
-                             " to the machine setting up tank" % settings.studio_bootstrapper_path)
+        if any(map(lambda p: not p.isfile(), settings.bootstrapper.values())):
+            raise ValueError("Bootstrapper at any of '%s' was not accessible - it must be visible"
+                             " to the machine setting up tank" % (', '.join(settings.bootstrapper.values())))
         # end assert it exists
 
         return settings
@@ -161,7 +166,8 @@ class SetupTankProject(ApplicationSettingsMixin):
         @param sg a shotgun connection
         @param log a logger
         @param project_id integer ID of the project to create
-        @return a tank instance, ready for use (useful for creating directories for instance)
+        @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
+        executable
         """
         settings = self._sanitize_settings(self.settings_value())
         project = DictObject(sg.find_one( 'Project',
@@ -220,11 +226,80 @@ class SetupTankProject(ApplicationSettingsMixin):
             raise AssertionError("Failed to re-write roots file at '%s' with error: %s" % (roots_file, err))
         # end handle exceptions
 
-        # Finally, setup the tank configuration to use the bwrapper
-        raise NotImplementedError("todo")
+        # Setup bootstrappers for posix and the rest
+        source_locations = settings.bootstrapper
+        for os_name in ('posix', 'windows'):
+            link_bootstrapper(source_locations['%s_path' % os_name], tank_os_root / 'btank', posix=(os_name=='posix'))
+        # end for each os name
+
+        # Finally, setup the tank configuration to use our bootstrapper
+        if not PatchSet(stream=StringIO(self.root_programs_patch)).apply(root=tank_os_root):
+            raise AssertionError("Couldn't apply patch to root programs - they must have changed too much")
+        # end handle patch
+
+        return tank_os_root
 
     ## -- End Interface -- @}
 
-    
+    # -------------------------
+    ## @name Resources
+    # @{
+
+    root_programs_patch = \
+r"""--- tank	2014-06-01 16:35:00.000000000 +0200
++++ tank	2014-05-27 14:46:24.000000000 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash --login
+ # Copyright (c) 2013 Shotgun Software Inc.
+ # 
+ # CONFIDENTIAL AND PROPRIETARY
+@@ -54,7 +54,9 @@
+ 
+ 
+ # if we have a local install of the core, this is the script to dispatch to
+-LOCAL_SCRIPT="$SELF_PATH/install/core/scripts/tank_cmd.sh"
++# BTANK: go straight for the wrapper, it is relocatable and handles all the cases
++LOCAL_SCRIPT="$SELF_PATH/btank"
++exec $LOCAL_SCRIPT $@
+ 
+ # when called from shotgun, we reroute to a special script which uses a login shell shebang.
+ if [ -n "$1" ] && ( [ "$1" = "shotgun_run_action" ] || [ "$1" = "shotgun_cache_actions" ] ); then
+--- tank.bat	2014-06-01 16:35:00.000000000 +0200
++++ tank.bat	2014-06-03 11:22:09.000000000 +0200
+@@ -53,6 +53,17 @@
+ for /f %%G in (%PARENT_CONFIG_FILE%) do (SET PARENT_LOCATION=%%G)
+ IF NOT EXIST "%PARENT_LOCATION%" GOTO NO_PARENT_LOCATION
+ 
++rem -- BTANK: go straight for the wrapper, it is relocatable and handles all the cases
++rem -- yes, I brutally copy-paste code from tank_cmd.bat to not have to deal with .bat any more than needed
++rem -- ARGH: how many lines of code just to do the equivalent of a one-liner in bash ? Please, die out, Windows, don't fight it
++set INTERPRETER_CONFIG_FILE=%PARENT_LOCATION%\config\core\interpreter_Windows.cfg
++IF NOT EXIST "%INTERPRETER_CONFIG_FILE%" GOTO NO_INTERPRETER_CONFIG
++for /f "tokens=*" %%G in (%INTERPRETER_CONFIG_FILE%) do (SET PYTHON_INTERPRETER=%%G)
++IF NOT EXIST %PYTHON_INTERPRETER% GOTO NO_INTERPRETER
++%PYTHON_INTERPRETER% "%SELF_PATH%\btank.py" %*
++exit /b %ERRORLEVEL%
++rem -- ----SHOULD NEVER REACH THIS POINT------------------------------------------------
++
+ rem -- all good, execute tank script in parent location
+ call %PARENT_LOCATION%\tank.bat %* --pc=%SELF_PATH%
+ 
+@@ -99,5 +110,10 @@
+ echo Cannot find parent location defined in file %PARENT_CONFIG_FILE%!
+ exit /b 1
+ 
++:NO_INTERPRETER_CONFIG
++echo "Cannot find interpreter configuration file %INTERPRETER_CONFIG_FILE%!"
++exit /b 1
+ 
+-
++:NO_INTERPRETER
++echo "Could not find interpreter %PYTHON_INTERPRETER% specified in configuration file!"
++exit /b 1
+\ No newline at end of file
+"""
+
+    ## -- End Resources -- @}
 
 # end class SetupTankProject

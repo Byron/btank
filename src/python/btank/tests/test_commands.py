@@ -36,6 +36,7 @@ log = logging.getLogger('btank.tests.test_base')
 
 # from * import
 from btank.commands import *
+from btank.utility import link_bootstrapper
 
 
 
@@ -95,19 +96,9 @@ class CommandTests(TankTestCase):
         @param name of the wrapper executable (like 'btank')
         @return (posix_wrapper, windows_wrapper)"""
         import bprocess.bootstrap
-        posix_wrapper_location = tree / name
-        bootrapper_path = Path(bprocess.bootstrap.__file__)
-        if os.name == 'posix':
-            bootrapper_path.symlink(posix_wrapper_location)
-        else:
-            posix_wrapper_location.write_text("Just a dummy, can't do fancy symlinks on windows")
-        # end on windows, we cannot make the symlink
-
-        win_wrapper_location = posix_wrapper_location + '.py'
-        (tree / '.bprocess_path').write_text(str(bootrapper_path))
-        bootrapper_path.copyfile(win_wrapper_location)
-
-        return posix_wrapper_location, win_wrapper_location
+        bootrapper_path = Path(bprocess.bootstrap.__file__).splitext()[0] + '.py'
+        return (link_bootstrapper(bootrapper_path, tree / name, posix=True), 
+                link_bootstrapper(bootrapper_path, tree / name, posix=False))
 
     def _default_configuration_tree(self):
         """@return existing Path to the default configuration
@@ -161,16 +152,17 @@ class CommandTests(TankTestCase):
         app = bapp.main()
         def required_info(schema, settings):
             # let's just put the bootstrapper to a known location, temporarily
-            settings.studio_bootstrapper_path = self._setup_bootstrapper_at(rw_dir, 'btank')[0]
-            settings.studio_configuration_uri = self._default_configuration_tree()
+            settings.bootstrapper.update(zip(('posix_path', 'windows_path'), 
+                                                      self._setup_bootstrapper_at(rw_dir, 'btank')))
+            settings.configuration_uri = self._default_configuration_tree()
         # end
 
         ApplyChangeContext('project-setup-settings').setup(     app.context(), 
-                                                                required_info,
+                                                            required_info,
                                                                 spc.settings_schema())
 
-        tk = spc.handle_project_setup(sg, log, project['id'])
-        assert tk, "expected a valid tank instance as return value"
+        location = spc.handle_project_setup(sg, log, project['id'])
+        assert location.isdir(), "expected a valid tank instance as return value"
 
         
 # end class BasicTests

@@ -1,0 +1,52 @@
+--- tank	2014-06-01 16:35:00.000000000 +0200
++++ tank	2014-05-27 14:46:24.000000000 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env bash
++#!/bin/bash --login
+ # Copyright (c) 2013 Shotgun Software Inc.
+ # 
+ # CONFIDENTIAL AND PROPRIETARY
+@@ -54,7 +54,9 @@
+ 
+ 
+ # if we have a local install of the core, this is the script to dispatch to
+-LOCAL_SCRIPT="$SELF_PATH/install/core/scripts/tank_cmd.sh"
++# BTANK: go straight for the wrapper, it is relocatable and handles all the cases
++LOCAL_SCRIPT="$SELF_PATH/btank"
++exec $LOCAL_SCRIPT $@
+ 
+ # when called from shotgun, we reroute to a special script which uses a login shell shebang.
+ if [ -n "$1" ] && ( [ "$1" = "shotgun_run_action" ] || [ "$1" = "shotgun_cache_actions" ] ); then
+--- tank.bat	2014-06-01 16:35:00.000000000 +0200
++++ tank.bat	2014-06-03 11:22:09.000000000 +0200
+@@ -53,6 +53,17 @@
+ for /f %%G in (%PARENT_CONFIG_FILE%) do (SET PARENT_LOCATION=%%G)
+ IF NOT EXIST "%PARENT_LOCATION%" GOTO NO_PARENT_LOCATION
+ 
++rem -- BTANK: go straight for the wrapper, it is relocatable and handles all the cases
++rem -- yes, I brutally copy-paste code from tank_cmd.bat to not have to deal with .bat any more than needed
++rem -- ARGH: how many lines of code just to do the equivalent of a one-liner in bash ? Please, die out, Windows, don't fight it
++set INTERPRETER_CONFIG_FILE=%PARENT_LOCATION%\config\core\interpreter_Windows.cfg
++IF NOT EXIST "%INTERPRETER_CONFIG_FILE%" GOTO NO_INTERPRETER_CONFIG
++for /f "tokens=*" %%G in (%INTERPRETER_CONFIG_FILE%) do (SET PYTHON_INTERPRETER=%%G)
++IF NOT EXIST %PYTHON_INTERPRETER% GOTO NO_INTERPRETER
++%PYTHON_INTERPRETER% "%SELF_PATH%\btank.py" %*
++exit /b %ERRORLEVEL%
++rem -- ----SHOULD NEVER REACH THIS POINT------------------------------------------------
++
+ rem -- all good, execute tank script in parent location
+ call %PARENT_LOCATION%\tank.bat %* --pc=%SELF_PATH%
+ 
+@@ -99,5 +110,10 @@
+ echo Cannot find parent location defined in file %PARENT_CONFIG_FILE%!
+ exit /b 1
+ 
++:NO_INTERPRETER_CONFIG
++echo "Cannot find interpreter configuration file %INTERPRETER_CONFIG_FILE%!"
++exit /b 1
+ 
+-
++:NO_INTERPRETER
++echo "Could not find interpreter %PYTHON_INTERPRETER% specified in configuration file!"
++exit /b 1
+\ No newline at end of file
