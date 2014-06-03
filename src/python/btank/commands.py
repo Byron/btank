@@ -228,8 +228,9 @@ class SetupTankProject(ApplicationSettingsMixin):
 
         # Setup bootstrappers for posix and the rest
         source_locations = settings.bootstrapper
-        for os_name in ('posix', 'windows'):
-            link_bootstrapper(source_locations['%s_path' % os_name], tank_os_root / 'btank', posix=(os_name=='posix'))
+        for (os_name, ext) in (('posix', ''), ('windows', '.py')):
+            link_bootstrapper(source_locations['%s_path' % os_name], tank_os_root / ('btank'+ext), 
+                              posix=(os_name=='posix'))
         # end for each os name
 
         # Finally, setup the tank configuration to use our bootstrapper

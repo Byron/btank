@@ -7,6 +7,8 @@ install:
   - pip install coveralls
   # make sure we have the latest version
   - pip install -U nose
+  - pip install git+https://github.com/Byron/bcore.git
+  - pip install git+https://github.com/shotgunsoftware/python-api.git
   # prepare fixture, which has to be downloaded manually
   - src/python/btank/tests/fixtures/setup_fixtures
 script:

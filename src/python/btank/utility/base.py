@@ -38,25 +38,36 @@ def core_hook_type():
     base_hook_file = tank_root / 'hooks' / (calling_module.namebase() + '.py')
     return loader.load_plugin(base_hook_file , Hook)
 
-def link_bootstrapper(source, destination, posix=True):
+def link_bootstrapper(source, destination, posix=True, relocatable=True):
     """Setup wrapper files for all platforms in the given destination_tree
     @param source the original wrapper's Path, absolute or relative
     usually something like .../bin/posix/anyname
-    @destination full path to the new wrapper location, the directory must exist. It shouldn't use an extension,
-    as we will set it accordingly in non-posix mode
+    @destination full path to the new wrapper location, the directory must exist. It should contain the .py
+    extension on windows for usability
     @param posix if True, we will create a symlink (requires posix), if false, we will make it work without and 
     adjust the file extension, if there is none
+    @param relocatable if True, we will try hard to make the links relative, even though absolute sources
+    have been provided
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)
+
+    # Convert into relative path if possible to make it relocatable
+    actual_source = source
+    if relocatable and source.isabs():
+        # this seems inverted, should rather be relpathto (??)
+        # Works that way though ... 
+        source_relative = destination.dirname().relpathfrom(source)
+        if len(source_relative) < len(source):
+            actual_source = source_relative
+        # end assure link worked
+    # end modify source
+
     if os.name == 'posix' and posix:
-        source.symlink(destination)
+        actual_source.symlink(destination)
         destination.chmod(octal('0555'))
     else:
-        if not destination.ext():
-            destination += '.py'
-        # end 
-        (destination.dirname() / '.bprocess_path').write_text(str(source))
+        (destination.dirname() / '.bprocess_path').write_text(str(actual_source))
         source.copyfile(destination)
     # end on windows, we cannot make the symlink
 

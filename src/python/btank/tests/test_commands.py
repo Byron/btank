@@ -98,7 +98,7 @@ class CommandTests(TankTestCase):
         import bprocess.bootstrap
         bootrapper_path = Path(bprocess.bootstrap.__file__).splitext()[0] + '.py'
         return (link_bootstrapper(bootrapper_path, tree / name, posix=True), 
-                link_bootstrapper(bootrapper_path, tree / name, posix=False))
+                link_bootstrapper(bootrapper_path, tree / (name + '.py'), posix=False))
 
     def _default_configuration_tree(self):
         """@return existing Path to the default configuration
