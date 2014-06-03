@@ -20,12 +20,12 @@ from mock import Mock
 
 from .base import TankTestCase
 import bapp
+from bapp.tests import with_application
 from butility.tests import with_rw_directory
+from bcontext import ApplyChangeContext
 from butility import (DictObject,
                       Path,
                       DEFAULT_ENCODING)
-from bapp.tests import with_application
-from bcontext import ApplyChangeContext
 
 from tank.util import shotgun
 from tank.deploy.tank_commands import setup_project
@@ -37,6 +37,12 @@ log = logging.getLogger('btank.tests.test_base')
 # from * import
 from btank.commands import *
 from btank.utility import link_bootstrapper
+
+# This is that ugly because plugins are never supposed to be imported directly, but always 
+# through the plugin system. For tests cases, however, we need to work aroud that.
+# NOTE: might be worth making their names more pythonic ... 
+modname = 'btank-plugins.shotgun-events'
+sgevents = __import__(modname, locals(), globals(), [modname])
 
 
 
@@ -121,8 +127,8 @@ class CommandTests(TankTestCase):
     ## -- End Utilities -- @}
 
 
-    @with_rw_directory
     @with_application(from_file=__file__)
+    @with_rw_directory
     def test_project_setup(self, rw_dir):
         # prepare the mock db - reuse the tank implementation as it's already what tank needs
         project = {      'type': 'Project',
@@ -145,24 +151,40 @@ class CommandTests(TankTestCase):
 
         assert sg.find_one('Project', [['id', 'is', 1]])
 
-        spc = SetupTankProject()
-        self.failUnlessRaises(ValueError, spc.handle_project_setup, sg, log, project['id'])
+        stp = SetupTankProject()
+        self.failUnlessRaises(AssertionError, stp.handle_project_setup, sg, log, project['id'], 'some.tank.uri')
 
-        # provide the required information
-        app = bapp.main()
+        pb, wb = self._setup_bootstrapper_at(rw_dir, 'btank')
+        config_uri = self._default_configuration_tree()
+        location = stp.handle_project_setup(sg, log, DictObject(project), config_uri,
+                                                                          posix_bootstrapper = pb,
+                                                                          windows_bootstrapper = wb)
+        assert location.isdir(), "expected a valid tank instance as return value"
+
+
+        ##############################
+        # Test Event Engine Plugin ##
+        ############################
+        # Now that we are at it, and have a working mock setup
         def required_info(schema, settings):
             # let's just put the bootstrapper to a known location, temporarily
-            settings.bootstrapper.update(zip(('posix_path', 'windows_path'), 
-                                                      self._setup_bootstrapper_at(rw_dir, 'btank')))
-            settings.configuration_uri = self._default_configuration_tree()
+            settings.bootstrapper.update((('posix_path', pb), ('windows_path', wb)))
+            settings.configuration_uri = config_uri
         # end
+ 
+        plugin = sgevents.TankProjectEventEnginePlugin(sg, log)
+        ApplyChangeContext('project-setup-settings').setup(bapp.main().context(), 
+                                                           required_info,
+                                                           plugin.setup_project_schema)
 
-        ApplyChangeContext('project-setup-settings').setup(     app.context(), 
-                                                            required_info,
-                                                                spc.settings_schema())
+        event = {'entity' : {'type' : 'Project', 'id' : project['id']}}
+        event = DictObject(event)
 
-        location = spc.handle_project_setup(sg, log, project['id'])
-        assert location.isdir(), "expected a valid tank instance as return value"
+        try:
+            plugin.handle_event(sg, log, event)
+        except OSError as err:
+            assert err.errno == 17, "project directory can't be created as it exists"
+        # end
 
         
 # end class BasicTests

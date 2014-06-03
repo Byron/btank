@@ -18,20 +18,18 @@ from contextlib import contextmanager
 from butility import (DictObject,
                       Path)
 
-from bapp import ApplicationSettingsMixin
 from bkvstore import YAMLStreamSerializer
 import tank
 from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
-from .schema import setup_project_schema
 from .utility import (platform_tank_map,
                       link_bootstrapper)
 from .utility.patch import PatchSet
 from butility.compat import StringIO
 
 
-class SetupTankProject(ApplicationSettingsMixin):
+class SetupTankProject(object):
     """Should run a reaction to a newly created Shotgun project and sets it up to work with btank.
     As opposed to the default implementation, we will make it use our own, pre-existing shotgun connection,
     and use kvstore and environmental information.
@@ -40,8 +38,6 @@ class SetupTankProject(ApplicationSettingsMixin):
     right in shotgun so wa can't know about it. See subclass interface for requirements.
     """
     __slots__ = ()
-
-    _schema = setup_project_schema
 
 
     # -------------------------
@@ -73,14 +69,6 @@ class SetupTankProject(ApplicationSettingsMixin):
         @param project a DictObject of all available project information, as returned from shotgun"""
         return project.name
 
-    def _project_config_uri(self, sg, log, settings, project):
-        """@return a tank-project-setup digestable URI to the configuration it should use."""
-        return settings.configuration_uri
-
-    def _project_bootstrapper_location(self, sg, log, settings, project):
-        """@return relative or absolute path to the posix and non-posix """
-        
-
     ## -- End Subclass Interface -- @}
 
 
@@ -110,26 +98,6 @@ class SetupTankProject(ApplicationSettingsMixin):
         setattr(setup_project, fun_name, prev_fun)
         # end do or undo
 
-    def _sanitize_settings(self, settings):
-        """Assure we have all required values actually set, and return possibly sanitized values"""
-        missing = list()
-        for required_setting in ('configuration_uri', 'bootstrapper'):
-            if not settings[required_setting]:
-                missing.append(required_setting)
-            # end
-        # end for each required setting
-
-        if missing:
-            raise ValueError("Need value for settings at %s" % ','.join(('%s.%s' % (setup_project_schema.key(), m))
-                                                                                    for m in missing))
-        # end
-
-        if any(map(lambda p: not p.isfile(), settings.bootstrapper.values())):
-            raise ValueError("Bootstrapper at any of '%s' was not accessible - it must be visible"
-                             " to the machine setting up tank" % (', '.join(settings.bootstrapper.values())))
-        # end assert it exists
-
-        return settings
 
     def _resolve_local_storage_names(self, sg, log, names):
         """@return a dict('name' : {'linux_path' : str', 'mac_path' : str, 'windows_path' : str}) 
@@ -161,18 +129,20 @@ class SetupTankProject(ApplicationSettingsMixin):
     ## @name Interface
     # @{
 
-    def handle_project_setup(self, sg, log, project_id):
+    def handle_project_setup(self, sg, log, project, tank_config_uri, posix_bootstrapper=None, 
+                                                                         windows_bootstrapper=None):
         """Deal with tank in order to get a new project setup accordingly.
         @param sg a shotgun connection
         @param log a logger
-        @param project_id integer ID of the project to create
+        @param project a DictObject with all available project information as retrieved from shotgun
+        @param tank_config_uri a tank-compatible URI to the configuration it should obtain
+        @param posix_bootstrapper if not None, an accessible location to the bootstrapper, which knows 
+        the 'tank' package
+        @param windows_bootstrapper see posix_bootstrapper. One of the two must exist
         @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
         executable
         """
-        settings = self._sanitize_settings(self.settings_value())
-        project = DictObject(sg.find_one( 'Project',
-                                          [['id', 'is', project_id]],
-                                          sg.schema_field_read('Project', None).keys()))
+        assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
 
         # Resolve all roots
         project_folder_name = self._project_folder_name(sg, log, project)
@@ -189,9 +159,9 @@ class SetupTankProject(ApplicationSettingsMixin):
         # setup parameters
         # Note that the storage roots will just remain unchanged until everything was created
         # We will post-process the roots.yml to match what's configured for the project
-        params = dict(project_id          = project_id,
+        params = dict(project_id          = project.id,
                       project_folder_name = str(project_folder_name),
-                      config_uri          = str(self._project_config_uri(sg, log, settings, project)),
+                      config_uri          = str(tank_config_uri),
                       config_path_mac     = str(tank_conftree('mac_path')),
                       config_path_linux   = str(tank_conftree('linux_path')),
                       config_path_win     = str(tank_conftree('windows_path')))
@@ -199,11 +169,7 @@ class SetupTankProject(ApplicationSettingsMixin):
         # For the next step to work, tank really wants the project directory to exist. Fair enough
         tank_os_name = platform_tank_map[sys.platform]
         project_os_root = project_roots['%s_path' % tank_os_name]
-        try:
-            project_os_root.mkdir()
-        except OSError as err:
-            raise OSError("Require write permissions on '%s'" % project_os_root.dirname())
-        # end
+        project_os_root.mkdir()
 
         # nothing useful in return
         cmd = tank.get_command('setup_project')
@@ -227,10 +193,10 @@ class SetupTankProject(ApplicationSettingsMixin):
         # end handle exceptions
 
         # Setup bootstrappers for posix and the rest
-        source_locations = settings.bootstrapper
-        for (os_name, ext) in (('posix', ''), ('windows', '.py')):
-            link_bootstrapper(source_locations['%s_path' % os_name], tank_os_root / ('btank'+ext), 
-                              posix=(os_name=='posix'))
+        for posix, (path, ext) in enumerate(((windows_bootstrapper, '.py'), (posix_bootstrapper, ''))):
+            if not path:
+                continue
+            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix)
         # end for each os name
 
         # Finally, setup the tank configuration to use our bootstrapper

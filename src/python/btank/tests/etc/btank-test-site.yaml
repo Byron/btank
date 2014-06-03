@@ -9,6 +9,7 @@ packages:
       # must be defined by parent assembly, see bdep-nonfree-assembly for example configuration
       # It's assume to provide unittest-helpers has well
       - tk-core-package
+      - shotgun-events
     environment:
       variables:
         PYTHONPATH: src/python
