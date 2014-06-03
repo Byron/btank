@@ -9,10 +9,11 @@ install:
   - pip install -U nose
   - pip install git+https://github.com/Byron/bcore.git
   - pip install git+https://github.com/shotgunsoftware/python-api.git
-  - pip install git+https://github.com/Byron/tk-core
   # prepare fixture, which has to be downloaded manually
   - src/python/btank/tests/fixtures/setup_fixtures
+  # For tank, wihtout a setup.py, and for the test-utilities, we will have to clone and do some path-magic
+  - pip install git+https://github.com/shotgunsoftware/tk-core
 script:
-  - 'cd src/python/btank/tests && nosetests --with-coverage . utility/patch/test_patch.py'
+  - 'PYTHONPATH=$PWD/tk-core/python:$PWD/tk-core/tests/python && cd src/python/btank/tests && nosetests --with-coverage . utility/patch/test_patch.py'
 after_success:
   - coveralls
