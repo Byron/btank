@@ -14,17 +14,5 @@
 			],
 			"file_exclude_patterns" : ["*.sublime-*", "*.html"],
 		},
-		{
-			"follow_symlinks": true,
-			"path": "/Users/byron/Documents/dev/bdep-nonfree/lib/tk-core/latest/noarch",
-		},
-		{
-			"follow_symlinks": true,
-			"path": "/Users/byron/Documents/dev/bdevel/lib/components/core",
-		},
-		{
-			"follow_symlinks": true,
-			"path": "/Users/byron/Documents/dev/bdevel/lib/components/shotgun-events",
-		},
 	]
 }

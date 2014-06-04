@@ -14,11 +14,11 @@ __all__ = []
 
 import os
 import logging
-from copy import deepcopy
 
 from mock import Mock
 
-from .base import TankTestCase
+from .base import (TankTestCase,
+                   with_tank_sandbox)
 import bapp
 from bapp.tests import with_application
 from butility.tests import with_rw_directory
@@ -27,7 +27,6 @@ from butility import (DictObject,
                       Path,
                       DEFAULT_ENCODING)
 
-from tank.util import shotgun
 from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 
@@ -61,36 +60,12 @@ class CommandTests(TankTestCase):
         """Make sure shotgun app store connections are mocked as well.
         We also apply monkey-patches, and don't undo them !
         """
-        super(CommandTests, self).setUp(*args, **kwargs)
-
-        fun_name = 'create_sg_app_store_connection'
-        def no_way(*args, **kwargs):
-            raise AssertionError("You can't get out of the prison")
-        # end
-
         errmsg = "Money patcher needs an update"
-        assert hasattr(shotgun, fun_name), errmsg
-        setattr(shotgun, fun_name, no_way)
 
         # disable this - we don't really have an install location here
         fun_name = '_install_environment'
         assert hasattr(setup_project, fun_name), errmsg
         setattr(setup_project, fun_name, lambda *args: None )
-
-        # Fix the mock db - it must copy return values, no matter what !
-        class CopyDict(dict):
-            __slots__ = ()
-            
-            def __getitem__(self, name):
-                return deepcopy(super(CopyDict, self).__getitem__(name))
-
-            def values(self):
-                return deepcopy(super(CopyDict, self).values())
-
-        # end class CopyDict
-
-
-        self._sg_mock_db = CopyDict()
 
     # -------------------------
     ## @name Utilities
@@ -129,27 +104,30 @@ class CommandTests(TankTestCase):
 
     @with_application(from_file=__file__)
     @with_rw_directory
-    def test_project_setup(self, rw_dir):
+    @with_tank_sandbox
+    def test_project_setup(self, rw_dir, sg):
         # prepare the mock db - reuse the tank implementation as it's already what tank needs
         project = {      'type': 'Project',
                          'id': 1,
                          'tank_name': None,
                          'name': 'project_name' }
 
-        self._sg_mock_db[('Project', 1)] = project
-        self._sg_mock_db[('LocalStorage', 1)] = {'code' : constants.PRIMARY_STORAGE_NAME,
-                                                 'mac_path' : str(rw_dir),
-                                                 'linux_path' : str(rw_dir), 
-                                                 'windows_path' : str(rw_dir)}
+        local_storage = {'code' : constants.PRIMARY_STORAGE_NAME,
+                         'mac_path' : str(rw_dir),
+                         'linux_path' : str(rw_dir), 
+                         'windows_path' : str(rw_dir),
+                         'id' : 1,
+                         'type' : 'LocalStorage'}
+        sg.set_entities([project, local_storage])
+        sg.set_server_info(version_tuple=(4, 3, 9))
 
-        sg = self.sg_mock
-        sg.server_info = Mock()
-        sg.server_info.__getitem__ = Mock(side_effect=[(4, 3, 9)])
-        sg.schema_read = Mock(side_effect=[('PublishedFile','PublishedFileType', 'PublishedFileDependency')])
+        for dummy in ('PublishedFile','PublishedFileType', 'PublishedFileDependency'):
+            sg.set_entity_schema(dummy, dict())
+        # end for each dummmy
+        sg.set_entity_schema('Project', dict((k, None) for k in project.keys()))
+
+        sg.update = Mock()
         sg.create = Mock(side_effect=[dict(id=42)])
-        sg.base_url = 'test-site.deluxe'
-
-        assert sg.find_one('Project', [['id', 'is', 1]])
 
         stp = SetupTankProject()
         self.failUnlessRaises(AssertionError, stp.handle_project_setup, sg, log, project['id'], 'some.tank.uri')
