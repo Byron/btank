@@ -10,12 +10,13 @@
 # This stays python 2 !
 # from __future__ import unicode_literals
 # from butility.future import str
-__all__ = []
+__all__ = ['SetupProjectPatcher']
 
 import os
 import logging
 
-from mock import Mock
+from mock import (Mock,
+                  patch)
 
 from .base import (TankTestCase,
                    with_tank_sandbox)
@@ -44,6 +45,25 @@ modname = 'btank-plugins.shotgun-events'
 sgevents = __import__(modname, locals(), globals(), [modname])
 
 
+# ==============================================================================
+## @name Utilities
+# ------------------------------------------------------------------------------
+## @{
+
+class SetupProjectPatcher(object):
+    """Assure that setup project doesn't get out"""
+    def __init__(self):
+        self.patch = patch('tank.deploy.tank_commands.setup_project._install_environment')
+        self.patch.start()
+
+    def __del__(self):
+        self.patch.stop()
+
+# end class SetupProjectPatcher
+
+## -- End Utilities -- @}
+
+
 
 class CommandTests(TankTestCase):
 
@@ -55,17 +75,6 @@ class CommandTests(TankTestCase):
         return ['primary']
 
     ## -- End Command Implementation -- @}
-
-    def setUp(self, *args, **kwargs):
-        """Make sure shotgun app store connections are mocked as well.
-        We also apply monkey-patches, and don't undo them !
-        """
-        errmsg = "Money patcher needs an update"
-
-        # disable this - we don't really have an install location here
-        fun_name = '_install_environment'
-        assert hasattr(setup_project, fun_name), errmsg
-        setattr(setup_project, fun_name, lambda *args: None )
 
     # -------------------------
     ## @name Utilities
@@ -134,6 +143,7 @@ class CommandTests(TankTestCase):
 
         pb, wb = self._setup_bootstrapper_at(rw_dir, 'btank')
         config_uri = self._default_configuration_tree()
+        patch_installer = SetupProjectPatcher()
         location = stp.handle_project_setup(sg, log, DictObject(project), config_uri,
                                                                           posix_bootstrapper = pb,
                                                                           windows_bootstrapper = wb)
