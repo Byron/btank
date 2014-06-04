@@ -21,7 +21,7 @@ packages:
       variables:
         PYTHONPATH: 'core/python'
         # allows to refer to the tank tree from other packages
-        TANK_TREE: '.'
+        TANK_STUDIO_INSTALL_TREE: '.'
 
   ######################
   tank-engine-maya: ###
@@ -96,7 +96,7 @@ packages:
     arguments:
       resolve: yes
       prepend:
-        - '$TANK_TREE/core/scripts/tank_cmd.py'
+        - '$TANK_STUDIO_INSTALL_TREE/core/scripts/tank_cmd.py'
 
 
 

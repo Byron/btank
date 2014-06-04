@@ -68,9 +68,9 @@ class TankDelegateCommonMixin(object):
     def _sgtk_module(cls, env):
         """@return the sgtk package, as demoninated in the environment
         @throws EnvironmentError if we couldn't find it"""
-        root = env.get('TANK_TREE')
+        root = env.get('TANK_STUDIO_INSTALL_TREE')
         if not root:
-            raise EnvironmentError("Expected TANK_TREE environment variable to be set")
+            raise EnvironmentError("Expected TANK_STUDIO_INSTALL_TREE environment variable to be set")
         root = Path(root) / 'core' / 'python'
         sys.path.append(str(root))
         try:
@@ -229,7 +229,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
 
     @classmethod
     def _tank_instance(cls, env, paths):
-        """@return the initialized tank package that exists at TANK_TREE, and the context path which created
+        """@return the initialized tank package that exists at TANK_STUDIO_INSTALL_TREE, and the context path which created
         the instance
         @param env enviornment of the to-be-started process
         @param paths from which to pull the context. They should be sorted from most specialized to to least 
