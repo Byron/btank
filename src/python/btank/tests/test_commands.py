@@ -30,6 +30,7 @@ from butility import (DictObject,
 
 from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
+import tank
 
 log = logging.getLogger('btank.tests.test_base')
 
@@ -135,8 +136,8 @@ class CommandTests(TankTestCase):
         # end for each dummmy
         sg.set_entity_schema('Project', dict((k, None) for k in project.keys()))
 
-        sg.update = Mock()
         sg.create = Mock(side_effect=[dict(id=42)])
+        sg.tk_user_agent_handler
 
         stp = SetupTankProject()
         self.failUnlessRaises(AssertionError, stp.handle_project_setup, sg, log, project['id'], 'some.tank.uri')
@@ -148,6 +149,11 @@ class CommandTests(TankTestCase):
                                                                           posix_bootstrapper = pb,
                                                                           windows_bootstrapper = wb)
         assert location.isdir(), "expected a valid tank instance as return value"
+
+
+        # If it's correct, folder structure should be doable.
+        tk = tank.tank_from_path(location)
+        tk.create_filesystem_structure(project['type'], project['id'])
 
 
         ##############################

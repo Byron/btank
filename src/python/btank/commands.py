@@ -13,6 +13,7 @@
 __all__ = ['SetupTankProject']
 
 import sys
+from copy import deepcopy
 from contextlib import contextmanager
 
 from butility import (DictObject,
@@ -117,6 +118,7 @@ class SetupTankProject(object):
             raise AssertionError("local storage named '%s' didn't exist - create it in shotgun and retry" % name)
         # end catch possible user errors
 
+        s = deepcopy(s)
         for platform, path in s.items():
             s[platform] = Path(path) / project_folder_name
         # end convert to path 

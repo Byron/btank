@@ -9,20 +9,32 @@
 from __future__ import unicode_literals
 from butility.future import str
 
-__all__ = ['TankTestCase', 'with_tank_sandbox']
+__all__ = ['TankTestCase', 'with_tank_sandbox', 'TankShotgunConnectionMock']
 
 from butility.tests import TestCase
 from butility import (Path,
                       wraps)
 from bshotgun.tests import ShotgunConnectionMock
-from mock import patch
+from mock import (patch,
+                  Mock)
+
+
 
 # ==============================================================================
-## @name Utiltiies
+## @name Types
 # ------------------------------------------------------------------------------
 ## @{
 
-# end class ShotgunConnectionMock
+class TankShotgunConnectionMock(ShotgunConnectionMock):
+    """A mock to catch some special cases of tank"""
+    __slots__ = ()
+
+    tk_user_agent_handler = Mock()
+
+# end class TankShotgunConnectionMock
+
+## -- End Types -- @}
+
 
 # ==============================================================================
 ## @name Decorators
@@ -41,7 +53,7 @@ def with_tank_sandbox(fun):
         raise AssertionError("You can't get out of the prison")
     # end
 
-    sg_mock = ShotgunConnectionMock()
+    sg_mock = TankShotgunConnectionMock()
 
     def make_mock(*args, **kwargs):
         return sg_mock
