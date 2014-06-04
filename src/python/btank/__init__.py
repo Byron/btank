@@ -12,4 +12,7 @@ from __future__ import unicode_literals
 from butility import Version
 __version__ = Version('0.1.0')
 
+
 from .utility import *
+from .commands import *
+from .schema import *
