@@ -4,8 +4,9 @@ For that reason, whenever *tank* is supposed to be used, *btank* is used to init
 
 ## Requirements
 
-* [bshotgun](https://github.com/Byron/bshotgun)
 * [shotgun toolkit](https://github.com/shotgunsoftware/tk-core)
+* [shotgun events](https://github.com/Byron/shotgun-events)
+    - for test-suite only
 
 ## Development Status
 

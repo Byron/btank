@@ -7,10 +7,12 @@
 			"folder_exclude_patterns" : [
 				"pages",
 				".git",
-				"doc"
+				"doc",
+				"build",
+				"dist",
+				"sdist"
 			],
 			"file_exclude_patterns" : ["*.sublime-*", "*.html"],
-
 		},
 	]
 }
