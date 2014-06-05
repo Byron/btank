@@ -214,6 +214,7 @@ class SetupTankProject(object):
     ## @name Resources
     # @{
 
+    ## See original patch source file at etc/patches/btank-interception.patch
     root_programs_patch = \
 r"""--- tank	2014-06-01 16:35:00.000000000 +0200
 +++ tank	2014-05-27 14:46:24.000000000 +0200

@@ -2,7 +2,7 @@ packages:
   #########################
   btank-package-tests:  ##
   #######################
-    trees: '{settings-files.btank-test-site.dirname}/../../../../..'
+    trees: '{yaml.btank-test-site.dirname}/../../../../..'
     description: |
       A meta-package with all dependencies to allow testing
     requires:

@@ -64,13 +64,13 @@ packages:
   #################
     name: BCore Tank Integration Package
     trees:
-      - '{settings-files.btank-packages.dirname}/..'
+      - '{yaml.btank-packages.dirname}/..'
     requires:
       - bcore
       - tank-studio-install
     boot:
       # make sure standard delegates are available to help dealing with tank
-      python_paths: '{settings-files.btank-packages.dirname}/../src/python'
+      python_paths: '{yaml.btank-packages.dirname}/../src/python'
       import: btank-plugins.bprocess-delegates
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 

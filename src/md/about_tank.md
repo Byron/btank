@@ -27,6 +27,7 @@
 + can be started from existing pipelines, such that tank is clean enough not to do much on import. It relies on a `tk` singleton.
 + The code does a lot of error checking, especially when reading external files, which are unreliable by definition.
 - **sinful** As a python 2 application, it doesn't properly deal with unicode strings. They are better not passed to anything that does type checking, as these usually compare by string, not using isinstance. In short, python 2/3 application will have to be very careful when using the API. However, this issue is more of a problem of python 2 code, than tank per se.
+- In terms of modularity, tank knows `frameworks`, 'engines', and `apps`. Hooks are custom callbacks, one per file in a predefined location. Apps my retrieve instance of other apps, making them appear a little like frameworks, dissolving the arbitrary boundary between them.
 
 
 ## `tank` commandline tool
