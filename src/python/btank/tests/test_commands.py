@@ -119,6 +119,8 @@ class CommandTests(TankTestCase):
         # prepare the mock db - reuse the tank implementation as it's already what tank needs
         project = {      'type': 'Project',
                          'id': 1,
+                         'sg_project_folder' : 'project_folder',
+                         'sg_project_short_name' : 'testy',
                          'tank_name': None,
                          'name': 'project_name' }
 
@@ -136,8 +138,6 @@ class CommandTests(TankTestCase):
         # end for each dummmy
         sg.set_entity_schema('Project', dict((k, None) for k in project.keys()))
 
-        sg.create = Mock(side_effect=[dict(id=42)])
-        sg.tk_user_agent_handler
 
         stp = SetupTankProject()
         self.failUnlessRaises(AssertionError, stp.handle_project_setup, sg, log, project['id'], 'some.tank.uri')
