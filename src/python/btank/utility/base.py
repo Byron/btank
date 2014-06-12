@@ -18,6 +18,8 @@ from butility import (Path,
 from sgtk import Hook
 from sgtk import loader
 
+from bprocess.bootstrap import Bootstrapper
+
 
 ## Maps sys.platform to names used in tank and shotgun.
 platform_tank_map = dict(darwin = 'mac',
@@ -63,12 +65,22 @@ def link_bootstrapper(source, destination, posix=True, relocatable=True):
         # end assure link worked
     # end modify source
 
-    if os.name == 'posix' and posix:
-        actual_source.symlink(destination)
-        destination.chmod(octal('0555'))
-    else:
-        (destination.dirname() / '.bprocess_path').write_text(str(actual_source))
+    def make_winlink():
+        """create a file-based symlink"""
+        (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(actual_source))
         source.copyfile(destination)
+    # end utility
+
+    if os.name == 'posix' and posix:
+        try:
+            actual_source.symlink(destination)
+            destination.chmod(octal('0555'))
+        except OSError:
+            # In this case, even on linux we may have to use fake symlinks. To us, it doesn't matter really
+            make_winlink()
+        # end handle no link possible
+    else:
+        make_winlink()
     # end on windows, we cannot make the symlink
 
     return destination
