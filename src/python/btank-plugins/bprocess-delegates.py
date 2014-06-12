@@ -152,16 +152,10 @@ class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ba
                 value.entity_id = int(new_args[5])
             # end overrides setter
 
-            # usually, this is done during prepare_context(), but we don't need the controller to react to 
-            # context changes and do plenty of extra work
-            ctx = self.ApplyChangeContextType('tank-engine-information').setup(
-                                                                                self._app.context().settings(),
-                                                                                set_overrides, 
-                                                                                tank_engine_schema)
-            self._app.context().push(ctx)
-            
-            # tk = self._sgtk_module(env).tank_from_entity(entity_type, entity_id)
-            # ctx = tk.context_from_entity(entity_type, entity_id)
+            # This call will also push the context onto the stack, nothing more to be done here
+            self.ApplyChangeContextType('tank-engine-information').setup(self._app.context(),
+                                                                         set_overrides, 
+                                                                         tank_engine_schema)
         #end handle particular command mode
 
         return (executable, env, new_args, cwd)
