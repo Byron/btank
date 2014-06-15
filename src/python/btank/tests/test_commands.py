@@ -148,7 +148,8 @@ class CommandTests(TankTestCase):
         patch_installer = SetupProjectPatcher()
         location = stp.handle_project_setup(sg, log, DictObject(project), config_uri,
                                                                           posix_bootstrapper = pb,
-                                                                          windows_bootstrapper = wb)
+                                                                          windows_bootstrapper = wb,
+                                                                          windows_py2_interpreter = 'c:\\foo')
         assert location.isdir(), "expected a valid tank instance as return value"
 
 
@@ -164,6 +165,7 @@ class CommandTests(TankTestCase):
         def required_info(schema, settings):
             # let's just put the bootstrapper to a known location, temporarily
             settings.bootstrapper.update((('posix_path', pb), ('windows_path', wb)))
+            settings.python2.windows_interpreter_path = 'c:\\Python27\\python.exe'
             settings.configuration_uri = config_uri
         # end
  

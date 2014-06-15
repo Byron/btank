@@ -50,7 +50,7 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
     ## @name Utilities
     # @{
 
-    def _sanitize_settings(self, settings):
+    def _sanitize_settings(self, settings, log):
         """Assure we have all required values actually set, and return possibly sanitized values"""
         missing = list()
         for required_setting in ('configuration_uri', 'bootstrapper'):
@@ -65,9 +65,13 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
         # end
 
         if any(map(lambda p: not p.isfile(), settings.bootstrapper.values())):
-            raise ValueError("Bootstrapper at any of '%s' was not accessible - it must be visible"
-                             " to the machine setting up tank" % (', '.join(settings.bootstrapper.values())))
+            log.warn("One of the bootstrappers at '%s' was not accessible - it should be visible"
+                     " to the machine setting up tank", ', '.join(settings.bootstrapper.values()))
         # end assert it exists
+
+        if settings.bootstrapper.windows_path and not settings.python2.windows_interpreter_path:
+            raise ValueError('python2.windows_interpreter_path needs to be set if the windows bootrapper is used')
+        # end
 
         return settings
     
@@ -96,15 +100,17 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
     
     @with_event_application
     def handle_event(self, app, shotgun, log, event):
-        settings = self._sanitize_settings(app.context().settings().value_by_schema(self.setup_project_schema))
+        settings = self._sanitize_settings(app.context().settings().value_by_schema(self.setup_project_schema), log)
         project = DictObject(shotgun.find_one( event.entity.type,
                                           [['id', 'is', event.entity.id]],
                                           shotgun.schema_field_read(event.entity.type, None).keys()))
 
         config_uri = self._project_config_uri(shotgun, log, settings, project)
         pp, wp = self._bootstrapper_paths(shotgun, log, settings, project)
+        windows_py2_interpreter = settings.python2.windows_interpreter_path
 
-        self.SetupTankProjectType().handle_project_setup(shotgun, log, project, config_uri, pp, wp)
+        self.SetupTankProjectType().handle_project_setup(shotgun, log, project, config_uri, pp, wp, 
+                                                         windows_py2_interpreter=windows_py2_interpreter)
 
     ## -- End Interface -- @}
 

@@ -78,7 +78,7 @@ class SetupTankProject(object):
     # @{
 
     @contextmanager
-    def _tank_monkey_patch(self):
+    def _tank_monkey_patch(self, windows_py2_interpreter=None):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
         the special way of tank handling its bootstrapping is not required.
@@ -90,8 +90,15 @@ class SetupTankProject(object):
 
         def return_locations():
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
-            msg = 'btank makes this obsolete'
-            return dict((p, msg) for p in ('Windows', 'Darwin', 'Linux'))
+            res = dict()
+            for platform in ('Windows', 'Darwin', 'Linux'):
+                msg = "not required on posix"
+                if platform == 'Windows' and windows_py2_interpreter:
+                    msg = windows_py2_interpreter
+                # end use interpreter on windows
+                res[platform] = msg
+            # end for each platform
+            return res
         # end
             
         setattr(setup_project, fun_name, return_locations)
@@ -132,7 +139,8 @@ class SetupTankProject(object):
     # @{
 
     def handle_project_setup(self, sg, log, project, tank_config_uri, posix_bootstrapper=None, 
-                                                                         windows_bootstrapper=None):
+                                                                      windows_bootstrapper=None,
+                                                                      windows_py2_interpreter=None):
         """Deal with tank in order to get a new project setup accordingly.
         @param sg a shotgun connection
         @param log a logger
@@ -140,11 +148,16 @@ class SetupTankProject(object):
         @param tank_config_uri a tank-compatible URI to the configuration it should obtain
         @param posix_bootstrapper if not None, an accessible location to the bootstrapper, which knows 
         the 'tank' package
-        @param windows_bootstrapper see posix_bootstrapper. One of the two must exist
+        @param windows_bootstrapper see posix_bootstrapper. One of the two must exist. Note that
+        windows_py2_interpreter must be set if the windows bootstrapper should work.
+        @param windows_py2_interpreter the windows path to the python2 interpreter executable.
         @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
         executable
         """
         assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
+        if windows_bootstrapper and not windows_py2_interpreter:
+            raise AssertionError("windows_bootstrapper requires the windows_py2_interpreter to be set as well")
+        # end
 
         # Resolve all roots
         project_folder_name = self._project_folder_name(sg, log, project)
@@ -176,7 +189,7 @@ class SetupTankProject(object):
         # nothing useful in return
         cmd = tank.get_command('setup_project')
         cmd.set_logger(log)
-        with self._tank_monkey_patch():
+        with self._tank_monkey_patch(windows_py2_interpreter):
             cmd.execute(params)
         # end assure monkey-patch gets undone
 
