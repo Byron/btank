@@ -138,22 +138,27 @@ class SetupTankProject(object):
     ## @name Interface
     # @{
 
-    def handle_project_setup(self, sg, log, project, tank_config_uri, posix_bootstrapper=None, 
-                                                                      windows_bootstrapper=None,
-                                                                      windows_py2_interpreter=None):
+    def handle_project_setup(self, sg, log, project, settings):
         """Deal with tank in order to get a new project setup accordingly.
         @param sg a shotgun connection
         @param log a logger
         @param project a DictObject with all available project information as retrieved from shotgun
-        @param tank_config_uri a tank-compatible URI to the configuration it should obtain
-        @param posix_bootstrapper if not None, an accessible location to the bootstrapper, which knows 
+        @param settings a dict matching the values of the setup_project_schema as defined in schema.py
+        where the keys mean the following
+        * configuration_uri a tank-compatible URI to the configuration it should obtain
+        * bootstrapper.posix_path if not None, an accessible location to the bootstrapper, which knows 
         the 'tank' package
-        @param windows_bootstrapper see posix_bootstrapper. One of the two must exist. Note that
-        windows_py2_interpreter must be set if the windows bootstrapper should work.
-        @param windows_py2_interpreter the windows path to the python2 interpreter executable.
+        * bootstrapper.windwos_path see posix_bootstrapper. One of the two must exist. Note that
+        python2.windows_interpreter_path must be set if the windows bootstrapper should work.
+        * python2.windows_interpreter_path the windows path to the python2 interpreter executable.
         @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
         executable
         """
+        tank_config_uri = settings.configuration_uri
+        posix_bootstrapper = settings.bootstrapper.posix_path
+        windows_bootstrapper = settings.bootstrapper.windows_path
+        windows_py2_interpreter = settings.python2.windows_interpreter_path
+
         assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
         if windows_bootstrapper and not windows_py2_interpreter:
             raise AssertionError("windows_bootstrapper requires the windows_py2_interpreter to be set as well")

@@ -22,8 +22,8 @@ from .base import (TankTestCase,
                    with_tank_sandbox)
 import bapp
 from bapp.tests import with_application
+from bkvstore import KeyValueStoreProvider
 from butility.tests import with_rw_directory
-from bcontext import ApplyChangeContext
 from butility import (DictObject,
                       Path,
                       DEFAULT_ENCODING)
@@ -38,6 +38,7 @@ log = logging.getLogger('btank.tests.test_base')
 # from * import
 from btank.commands import *
 from btank.utility import link_bootstrapper
+from btank.schema import setup_project_schema
 
 # This is that ugly because plugins are never supposed to be imported directly, but always 
 # through the plugin system. For tests cases, however, we need to work aroud that.
@@ -141,15 +142,14 @@ class CommandTests(TankTestCase):
 
 
         stp = SetupTankProject()
-        self.failUnlessRaises(AssertionError, stp.handle_project_setup, sg, log, project['id'], 'some.tank.uri')
 
         pb, wb = self._setup_bootstrapper_at(rw_dir, 'btank')
         config_uri = self._default_configuration_tree()
         patch_installer = SetupProjectPatcher()
-        location = stp.handle_project_setup(sg, log, DictObject(project), config_uri,
-                                                                          posix_bootstrapper = pb,
-                                                                          windows_bootstrapper = wb,
-                                                                          windows_py2_interpreter = 'c:\\foo')
+        settings = DictObject({'bootstrapper' : {'posix_path' : pb, 'windows_path' : wb},
+                               'configuration_uri': config_uri,
+                               'python2' : {'windows_interpreter_path' : 'c:\\foo'}})
+        location = stp.handle_project_setup(sg, log, DictObject(project), settings)
         assert location.isdir(), "expected a valid tank instance as return value"
 
 
@@ -161,18 +161,10 @@ class CommandTests(TankTestCase):
         ##############################
         # Test Event Engine Plugin ##
         ############################
-        # Now that we are at it, and have a working mock setup
-        def required_info(schema, settings):
-            # let's just put the bootstrapper to a known location, temporarily
-            settings.bootstrapper.update((('posix_path', pb), ('windows_path', wb)))
-            settings.python2.windows_interpreter_path = 'c:\\Python27\\python.exe'
-            settings.configuration_uri = config_uri
-        # end
- 
         plugin = sgevents.TankProjectEventEnginePlugin(sg, log)
-        ApplyChangeContext('project-setup-settings').setup(bapp.main().context(), 
-                                                           required_info,
-                                                           plugin.setup_project_schema)
+
+        ctx = bapp.main().context().push('project-setup-settings')
+        ctx.settings().set_value_by_schema(setup_project_schema, settings)
 
         event = {'entity' : {'type' : 'Project', 'id' : project['id']}}
         event = DictObject(event)

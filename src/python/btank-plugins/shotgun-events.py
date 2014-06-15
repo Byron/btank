@@ -82,15 +82,10 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
     ## @name Subclass Interface
     # @{
 
-    def _project_config_uri(self, sg, log, settings, project):
-        """@return a tank-project-setup digestable URI to the configuration it should use."""
-        return settings.configuration_uri
-
-    def _bootstrapper_paths(self, sg, log, settings, project):
-        """@return [posix_path, windows_path] of Paths to bootstrappers to use when creating the given project.
-        They must be returned in that order, and either of them may be None to drop support for that platform"""
-        bs = settings.bootstrapper
-        return bs.posix_path, bs.windows_path
+    def _adjusted_settings(self, sg, log, settings, project):
+        """@return a DictObject similar (or the same as) settings, with possibly adjusted values. This is your 
+        official call to make changes before the settings are used"""
+        return settings
 
     ## -- End Subclass Interface -- @}
 
@@ -105,12 +100,8 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
                                           [['id', 'is', event.entity.id]],
                                           shotgun.schema_field_read(event.entity.type, None).keys()))
 
-        config_uri = self._project_config_uri(shotgun, log, settings, project)
-        pp, wp = self._bootstrapper_paths(shotgun, log, settings, project)
-        windows_py2_interpreter = settings.python2.windows_interpreter_path
-
-        self.SetupTankProjectType().handle_project_setup(shotgun, log, project, config_uri, pp, wp, 
-                                                         windows_py2_interpreter=windows_py2_interpreter)
+        settings = self._adjusted_settings(shotgun, log, settings, project)
+        self.SetupTankProjectType().handle_project_setup(shotgun, log, project, settings)
 
     ## -- End Interface -- @}
 
