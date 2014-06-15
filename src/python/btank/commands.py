@@ -283,7 +283,7 @@ r"""--- tank	2014-06-01 16:35:00.000000000 +0200
 +rem -- BTANK: go straight for the wrapper, it is relocatable and handles all the cases
 +rem -- yes, I brutally copy-paste code from tank_cmd.bat to not have to deal with .bat any more than needed
 +rem -- ARGH: how many lines of code just to do the equivalent of a one-liner in bash ? Please, die out, Windows, don't fight it
-+SET PYTHON_INTERPRETER"{windows_python2_interpreter_path}"
++SET PYTHON_INTERPRETER="{windows_python2_interpreter_path}"
 +IF NOT EXIST %PYTHON_INTERPRETER% GOTO NO_INTERPRETER
 +%PYTHON_INTERPRETER% "%SELF_PATH%\btank.py" %*
 +exit /b %ERRORLEVEL%
