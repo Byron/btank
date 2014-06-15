@@ -161,7 +161,8 @@ class SetupTankProject(object):
 
         assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
         if windows_bootstrapper and not windows_py2_interpreter:
-            raise AssertionError("windows_bootstrapper requires the windows_py2_interpreter to be set as well")
+            msg = "bootstrapper.windows_path requires python2.windows_interpreter_path to be set as well"
+            raise AssertionError(msg)
         # end
 
         # Resolve all roots
