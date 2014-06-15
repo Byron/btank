@@ -49,7 +49,7 @@ def link_bootstrapper(source, destination, posix=True, relocatable=True):
     @param posix if True, we will create a symlink (requires posix), if false, we will make it work without and 
     adjust the file extension, if there is none
     @param relocatable if True, we will try hard to make the links relative, even though absolute sources
-    have been provided
+    have been provided.
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)
@@ -60,7 +60,7 @@ def link_bootstrapper(source, destination, posix=True, relocatable=True):
         # this seems inverted, should rather be relpathto (??)
         # Works that way though ... 
         source_relative = destination.dirname().relpathfrom(source)
-        if len(source_relative) < len(source):
+        if (destination.dirname() / source_relative).exists():
             actual_source = source_relative
         # end assure link worked
     # end modify source

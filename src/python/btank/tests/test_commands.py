@@ -88,8 +88,9 @@ class CommandTests(TankTestCase):
         @return (posix_wrapper, windows_wrapper)"""
         import bprocess.bootstrap
         bootrapper_path = Path(bprocess.bootstrap.__file__).splitext()[0] + '.py'
-        return (link_bootstrapper(bootrapper_path, tree / name, posix=True), 
-                link_bootstrapper(bootrapper_path, tree / (name + '.py'), posix=False))
+        # no need for relocatability here ... also good to test that branch, if it was one
+        return (link_bootstrapper(bootrapper_path, tree / name, posix=True, relocatable=False), 
+                link_bootstrapper(bootrapper_path, tree / (name + '.py'), posix=False, relocatable=False))
 
     def _default_configuration_tree(self):
         """@return existing Path to the default configuration
