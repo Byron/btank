@@ -78,7 +78,7 @@ class SetupTankProject(object):
     # @{
 
     @contextmanager
-    def _tank_monkey_patch(self, windows_py2_interpreter=None):
+    def _tank_monkey_patch(self, winows_tank_core=None):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
         the special way of tank handling its bootstrapping is not required.
@@ -92,11 +92,11 @@ class SetupTankProject(object):
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
             res = dict()
             for platform in ('Windows', 'Darwin', 'Linux'):
-                msg = "not required on posix"
-                if platform == 'Windows' and windows_py2_interpreter:
-                    msg = windows_py2_interpreter
+                contents = "not required on posix"
+                if platform == 'Windows' and winows_tank_core:
+                    contents = winows_tank_core
                 # end use interpreter on windows
-                res[platform] = msg
+                res[platform] = contents
             # end for each platform
             return res
         # end
@@ -149,19 +149,19 @@ class SetupTankProject(object):
         * bootstrapper.posix_path if not None, an accessible location to the bootstrapper, which knows 
         the 'tank' package
         * bootstrapper.windwos_path see posix_bootstrapper. One of the two must exist. Note that
-        python2.windows_interpreter_path must be set if the windows bootstrapper should work.
-        * python2.windows_interpreter_path the windows path to the python2 interpreter executable.
+        tank.windows_core_path must be set if the windows bootstrapper should work find its interpreter
+        * tank.windows_core_path the windows path to the core installation, which needs the 
         @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
         executable
         """
         tank_config_uri = settings.configuration_uri
         posix_bootstrapper = settings.bootstrapper.posix_path
         windows_bootstrapper = settings.bootstrapper.windows_path
-        windows_py2_interpreter = settings.python2.windows_interpreter_path
+        winows_tank_core = settings.tank.windows_core_path
 
         assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
-        if windows_bootstrapper and not windows_py2_interpreter:
-            msg = "bootstrapper.windows_path requires python2.windows_interpreter_path to be set as well"
+        if windows_bootstrapper and not winows_tank_core:
+            msg = "bootstrapper.windows_path requires tank.windows_core_path to be set as well"
             raise AssertionError(msg)
         # end
 
@@ -195,7 +195,7 @@ class SetupTankProject(object):
         # nothing useful in return
         cmd = tank.get_command('setup_project')
         cmd.set_logger(log)
-        with self._tank_monkey_patch(windows_py2_interpreter):
+        with self._tank_monkey_patch(winows_tank_core):
             cmd.execute(params)
         # end assure monkey-patch gets undone
 

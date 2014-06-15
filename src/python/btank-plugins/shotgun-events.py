@@ -69,8 +69,8 @@ class TankProjectEventEnginePlugin(EventEnginePlugin, bapp.plugin_type()):
                      " to the machine setting up tank", ', '.join(settings.bootstrapper.values()))
         # end assert it exists
 
-        if settings.bootstrapper.windows_path and not settings.python2.windows_interpreter_path:
-            raise ValueError('python2.windows_interpreter_path needs to be set if the windows bootrapper is used')
+        if settings.bootstrapper.windows_path and not settings.tank.windows_core_path:
+            raise ValueError('tank.windows_core_path needs to be set if the bootstrapper.windows_path is used')
         # end
 
         return settings

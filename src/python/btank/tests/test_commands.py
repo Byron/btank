@@ -148,7 +148,7 @@ class CommandTests(TankTestCase):
         patch_installer = SetupProjectPatcher()
         settings = DictObject({'bootstrapper' : {'posix_path' : pb, 'windows_path' : wb},
                                'configuration_uri': config_uri,
-                               'python2' : {'windows_interpreter_path' : 'c:\\foo'}})
+                               'tank' : {'windows_core_path' : 'c:\\foo'}})
         location = stp.handle_project_setup(sg, log, DictObject(project), settings)
         assert location.isdir(), "expected a valid tank instance as return value"
 
