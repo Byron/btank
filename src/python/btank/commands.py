@@ -78,7 +78,7 @@ class SetupTankProject(object):
     # @{
 
     @contextmanager
-    def _tank_monkey_patch(self, winows_tank_core=None):
+    def _tank_monkey_patch(self):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
         the special way of tank handling its bootstrapping is not required.
@@ -90,14 +90,7 @@ class SetupTankProject(object):
 
         def return_locations():
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
-            res = dict()
-            for platform in ('Windows', 'Darwin', 'Linux'):
-                contents = "not required on posix"
-                if platform == 'Windows' and winows_tank_core:
-                    contents = winows_tank_core
-                # end use interpreter on windows
-                res[platform] = contents
-            # end for each platform
+            return dict((p, 'not required due to btank interception') for p in ('Windows', 'Darwin', 'Linux'))
             return res
         # end
             
@@ -105,7 +98,6 @@ class SetupTankProject(object):
         yield
         setattr(setup_project, fun_name, prev_fun)
         # end do or undo
-
 
     def _resolve_local_storage_names(self, sg, log, names):
         """@return a dict('name' : {'linux_path' : str', 'mac_path' : str, 'windows_path' : str}) 
@@ -131,6 +123,26 @@ class SetupTankProject(object):
         # end convert to path 
         return s
 
+    def _sanitize_settings(self, settings):
+        """Assure we have all required values actually set, and return possibly sanitized values"""
+        if settings.bootstrapper.windows_symlink_path and not settings.tank.windows_python2_interpreter_path:
+            raise ValueError('tank.windows_core_install_path needs to be set if the bootstrapper.windows_path is used')
+        # end
+
+
+        if not settings.bootstrapper.host_path:
+            raise ValueError("One bootstrapper.host_path must be set")
+        # end
+        if not (settings.bootstrapper.windows_symlink_path or settings.bootstrapper.posix_symlink_path):
+            raise ValueError("At least one symlink source must be set")
+        # end
+        if settings.bootstrapper.windows_symlink_path and not settings.tank.windows_python2_interpreter_path:
+            msg = "bootstrapper.windows_symlink_path requires tank.windows_python2_interpreter_path to be set as well"
+            raise AssertionError(msg)
+        # end
+
+        return settings
+
     ## -- End Utilities -- @}
 
 
@@ -145,25 +157,25 @@ class SetupTankProject(object):
         @param project a DictObject with all available project information as retrieved from shotgun
         @param settings a dict matching the values of the setup_project_schema as defined in schema.py
         where the keys mean the following
-        * configuration_uri a tank-compatible URI to the configuration it should obtain
-        * bootstrapper.posix_path if not None, an accessible location to the bootstrapper, which knows 
-        the 'tank' package
-        * bootstrapper.windwos_path see posix_bootstrapper. One of the two must exist. Note that
-        tank.windows_core_path must be set if the windows bootstrapper should work find its interpreter
-        * tank.windows_core_path the windows path to the core installation, which needs the 
+        * tank.configuration_uri a tank-compatible URI to the configuration it should obtain
+        * bootstrapper.host_path a host-accessible location to the bootstrapper, which knows 
+        the btank package
+        * bootstrapper.[windows|posix}_symlink_path a relative or absolute path to use as symlink value. One of them 
+        must be set
+        Note that tank.windows_python2_interpreter_path must be set if the windows bootstrapper 
+        should work find its interpreter
+        * tank.windows_python2_interpreter_path the windows path to the python 2 interpreter
         @return the location at which tank was installed, it is the pipeline configuration root, and contains the tank 
         executable
         """
-        tank_config_uri = settings.configuration_uri
-        posix_bootstrapper = settings.bootstrapper.posix_path
-        windows_bootstrapper = settings.bootstrapper.windows_path
-        winows_tank_core = settings.tank.windows_core_path
 
-        assert posix_bootstrapper or windows_bootstrapper, "One bootstrapper path must be set at least"
-        if windows_bootstrapper and not winows_tank_core:
-            msg = "bootstrapper.windows_path requires tank.windows_core_path to be set as well"
-            raise AssertionError(msg)
-        # end
+        settings = self._sanitize_settings(settings)
+
+        tank_config_uri = settings.tank.configuration_uri
+        bootstrapper_path = settings.bootstrapper.host_path
+        posix_symlink_path = settings.bootstrapper.posix_symlink_path
+        windows_symlink_path = settings.bootstrapper.windows_symlink_path
+        win_py2_interpreter = settings.tank.windows_python2_interpreter_path
 
         # Resolve all roots
         project_folder_name = self._project_folder_name(sg, log, project)
@@ -195,7 +207,7 @@ class SetupTankProject(object):
         # nothing useful in return
         cmd = tank.get_command('setup_project')
         cmd.set_logger(log)
-        with self._tank_monkey_patch(winows_tank_core):
+        with self._tank_monkey_patch():
             cmd.execute(params)
         # end assure monkey-patch gets undone
 
@@ -214,14 +226,16 @@ class SetupTankProject(object):
         # end handle exceptions
 
         # Setup bootstrappers for posix and the rest
-        for posix, (path, ext) in enumerate(((windows_bootstrapper, '.py'), (posix_bootstrapper, ''))):
-            if not path:
+        for posix, (path, symlink_source, ext) in enumerate(((bootstrapper_path, windows_symlink_path, '.py'),
+                                                             (bootstrapper_path, posix_symlink_path, ''))):
+            if not symlink_source:
                 continue
-            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix)
+            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix, symlink_source=symlink_source)
         # end for each os name
 
         # Finally, setup the tank configuration to use our bootstrapper
-        if not PatchSet(stream=StringIO(self.root_programs_patch)).apply(root=tank_os_root):
+        patch = self.root_programs_patch.format(windows_python2_interpreter_path=win_py2_interpreter)
+        if not PatchSet(stream=StringIO(patch)).apply(root=tank_os_root):
             raise AssertionError("Couldn't apply patch to root programs - they must have changed too much")
         # end handle patch
 
@@ -263,9 +277,7 @@ r"""--- tank	2014-06-01 16:35:00.000000000 +0200
 +rem -- BTANK: go straight for the wrapper, it is relocatable and handles all the cases
 +rem -- yes, I brutally copy-paste code from tank_cmd.bat to not have to deal with .bat any more than needed
 +rem -- ARGH: how many lines of code just to do the equivalent of a one-liner in bash ? Please, die out, Windows, don't fight it
-+set INTERPRETER_CONFIG_FILE=%PARENT_LOCATION%\config\core\interpreter_Windows.cfg
-+IF NOT EXIST "%INTERPRETER_CONFIG_FILE%" GOTO NO_INTERPRETER_CONFIG
-+for /f "tokens=*" %%G in (%INTERPRETER_CONFIG_FILE%) do (SET PYTHON_INTERPRETER=%%G)
++SET PYTHON_INTERPRETER=%{windows_python2_interpreter_path}%
 +IF NOT EXIST %PYTHON_INTERPRETER% GOTO NO_INTERPRETER
 +%PYTHON_INTERPRETER% "%SELF_PATH%\btank.py" %*
 +exit /b %ERRORLEVEL%

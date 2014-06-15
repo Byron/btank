@@ -90,8 +90,8 @@ class CommandTests(TankTestCase):
         import bprocess.bootstrap
         bootrapper_path = Path(bprocess.bootstrap.__file__).splitext()[0] + '.py'
         # no need for relocatability here ... also good to test that branch, if it was one
-        return (link_bootstrapper(bootrapper_path, tree / name, posix=True, relocatable=False), 
-                link_bootstrapper(bootrapper_path, tree / (name + '.py'), posix=False, relocatable=False))
+        return (link_bootstrapper(bootrapper_path, tree / name, posix=True), 
+                link_bootstrapper(bootrapper_path, tree / (name + '.py'), posix=False))
 
     def _default_configuration_tree(self):
         """@return existing Path to the default configuration
@@ -146,9 +146,11 @@ class CommandTests(TankTestCase):
         pb, wb = self._setup_bootstrapper_at(rw_dir, 'btank')
         config_uri = self._default_configuration_tree()
         patch_installer = SetupProjectPatcher()
-        settings = DictObject({'bootstrapper' : {'posix_path' : pb, 'windows_path' : wb},
-                               'configuration_uri': config_uri,
-                               'tank' : {'windows_core_path' : 'c:\\foo'}})
+        settings = DictObject({'bootstrapper' : {'host_path' : pb, # will work on all platforms in our case
+                                                 'posix_symlink_path' : pb, 
+                                                 'windows_symlink_path' : wb},
+                               'tank' : {'windows_python2_interpreter_path' : 'c:\\foo',
+                                         'configuration_uri': config_uri}})
         location = stp.handle_project_setup(sg, log, DictObject(project), settings)
         assert location.isdir(), "expected a valid tank instance as return value"
 

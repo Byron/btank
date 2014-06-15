@@ -40,40 +40,35 @@ def core_hook_type():
     base_hook_file = tank_root / 'hooks' / (calling_module.namebase() + '.py')
     return loader.load_plugin(base_hook_file , Hook)
 
-def link_bootstrapper(source, destination, posix=True, relocatable=True):
+def link_bootstrapper(source, destination, posix=True, symlink_source=None):
     """Setup wrapper files for all platforms in the given destination_tree
     @param source the original wrapper's Path, absolute or relative
-    usually something like .../bin/posix/anyname
+    usually something like .../bin/posix/anyname.
+    It SHOULD be readable by the current program, as it may be copied to the destination in case symlinks are 
+    not supported.
     @destination full path to the new wrapper location, the directory must exist. It should contain the .py
     extension on windows for usability
-    @param posix if True, we will create a symlink (requires posix), if false, we will make it work without and 
-    adjust the file extension, if there is none
-    @param relocatable if True, we will try hard to make the links relative, even though absolute sources
-    have been provided.
+    @param posix if True, we will create a symlink (requires posix), if false, we will make it work without.
+    However, if the symlink creation fails, we will resort to using  a 'winlink' on posix systems as well.
+    @param symlink_source if unset, it defaults to source. Otherwise, if the platform creating the symlink 
+    is not the platform using them, the path to compute the symlink can be explicitly provided.
+    It's the path used to reach the source bootstrapper from destination, and you want to use this if the 
+    symlink should be relative. The latter can be computed as well, but it's difficult in a multi-platform scenario,
+    so we keep things explicit here
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)
-
-    # Convert into relative path if possible to make it relocatable
-    actual_source = source
-    if relocatable and source.isabs():
-        # this seems inverted, should rather be relpathto (??)
-        # Works that way though ... 
-        source_relative = destination.dirname().relpathfrom(source)
-        if (destination.dirname() / source_relative).exists():
-            actual_source = source_relative
-        # end assure link worked
-    # end modify source
+    symlink_source = symlink_source or source
 
     def make_winlink():
         """create a file-based symlink"""
-        (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(actual_source))
+        (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(symlink_source))
         source.copyfile(destination)
     # end utility
 
     if os.name == 'posix' and posix:
         try:
-            actual_source.symlink(destination)
+            symlink_source.symlink(destination)
             destination.chmod(octal('0555'))
         except OSError:
             # In this case, even on linux we may have to use fake symlinks. To us, it doesn't matter really
