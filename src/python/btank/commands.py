@@ -270,23 +270,28 @@ r"""--- tank	2014-06-01 16:35:00.000000000 +0200
  if [ -n "$1" ] && ( [ "$1" = "shotgun_run_action" ] || [ "$1" = "shotgun_cache_actions" ] ); then
 --- tank.bat	2014-06-01 16:35:00.000000000 +0200
 +++ tank.bat	2014-06-03 11:22:09.000000000 +0200
-@@ -53,6 +53,17 @@
- for /f %%G in (%PARENT_CONFIG_FILE%) do (SET PARENT_LOCATION=%%G)
- IF NOT EXIST "%PARENT_LOCATION%" GOTO NO_PARENT_LOCATION
+@@ -46,12 +46,14 @@
+ rem -- the parent location is stored in a config file
+ :NO_LOCAL_INSTALL
  
+-set PARENT_CONFIG_FILE=%SELF_PATH%install\core\core_Windows.cfg
+-IF NOT EXIST "%PARENT_CONFIG_FILE%" GOTO NO_PARENT_CONFIG
+-
+-rem -- get contents of file
+-for /f %%G in (%PARENT_CONFIG_FILE%) do (SET PARENT_LOCATION=%%G)
+-IF NOT EXIST "%PARENT_LOCATION%" GOTO NO_PARENT_LOCATION
 +rem -- BTANK: go straight for the wrapper, it is relocatable and handles all the cases
 +rem -- yes, I brutally copy-paste code from tank_cmd.bat to not have to deal with .bat any more than needed
 +rem -- ARGH: how many lines of code just to do the equivalent of a one-liner in bash ? Please, die out, Windows, don't fight it
-+SET PYTHON_INTERPRETER="{windows_python2_interpreter_path}"
++SET PYTHON_INTERPRETER"{windows_python2_interpreter_path}"
 +IF NOT EXIST %PYTHON_INTERPRETER% GOTO NO_INTERPRETER
 +%PYTHON_INTERPRETER% "%SELF_PATH%\btank.py" %*
 +exit /b %ERRORLEVEL%
 +rem -- ----SHOULD NEVER REACH THIS POINT------------------------------------------------
-+
+ 
  rem -- all good, execute tank script in parent location
  call %PARENT_LOCATION%\tank.bat %* --pc=%SELF_PATH%
- 
-@@ -99,5 +110,10 @@
+@@ -99,5 +101,10 @@
  echo Cannot find parent location defined in file %PARENT_CONFIG_FILE%!
  exit /b 1
  
