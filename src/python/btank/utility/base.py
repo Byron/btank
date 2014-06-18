@@ -40,7 +40,7 @@ def core_hook_type():
     base_hook_file = tank_root / 'hooks' / (calling_module.namebase() + '.py')
     return loader.load_plugin(base_hook_file , Hook)
 
-def link_bootstrapper(source, destination, posix=True, symlink_source=None):
+def link_bootstrapper(source, destination, posix=True, symlink_source=None, append=True):
     """Setup wrapper files for all platforms in the given destination_tree
     @param source the original wrapper's Path, absolute or relative
     usually something like .../bin/posix/anyname.
@@ -48,13 +48,16 @@ def link_bootstrapper(source, destination, posix=True, symlink_source=None):
     not supported.
     @destination full path to the new wrapper location, the directory must exist. It should contain the .py
     extension on windows for usability
-    @param posix if True, we will create a symlink (requires posix), if false, we will make it work without.
+    @param posix if True, we will create a symlink (requires posix compatible filesystems), otherwise
+    we will make it work without.
     However, if the symlink creation fails, we will resort to using  a 'winlink' on posix systems as well.
     @param symlink_source if unset, it defaults to source. Otherwise, if the platform creating the symlink 
     is not the platform using them, the path to compute the symlink can be explicitly provided.
     It's the path used to reach the source bootstrapper from destination, and you want to use this if the 
     symlink should be relative. The latter can be computed as well, but it's difficult in a multi-platform scenario,
     so we keep things explicit here
+    @param append if True, and if a windows compatible symlink is created, we will append to the file. This is useful
+    if different platforms have different (possibly absolute) locations at which to find their bootstrapper.
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)
@@ -62,7 +65,7 @@ def link_bootstrapper(source, destination, posix=True, symlink_source=None):
 
     def make_winlink():
         """create a file-based symlink"""
-        (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(symlink_source))
+        (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(symlink_source + '\n'), append=append)
         source.copyfile(destination)
     # end utility
 
