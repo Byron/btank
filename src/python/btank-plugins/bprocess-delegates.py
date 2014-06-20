@@ -268,12 +268,6 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
 
         settings = self.settings_value()
         host_app_name = self._host_app_name(actual_executable)
-        if settings.host_app_name and settings.host_app_name != host_app_name:
-            log.error("host application name passed by 'tank' commandline '%s' didn't match host application "
-                      "reported by delegate '%s' - tank disabled - please check your configuration", 
-                      settings.host_app_name, host_app_name)
-            return rval
-        # end verify application name
 
         # Get the most specific context, and feed it to the engine via env vars
         # We could have entity information from a 'btank' invocation done previously, so try to use that instead
