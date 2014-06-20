@@ -9,7 +9,7 @@
 from __future__ import unicode_literals
 from butility.future import str
 __all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate', 'NukeTankEngineDelegate', 
-           'MayaTankEngineDelegate']
+           'MayaTankEngineDelegate', 'AfterEffectsTankEngineDelegate']
 
 import os
 import sys
@@ -189,7 +189,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
     The context will be created using tank's own mechanisms.
     """
     __slots__ = ('_context_paths',      # paths we have encountered on the commandline, including the actual executable
-                 '_tank_initialized')    # will be true once we have managed to initialize tank
+                 '_may_start_process')    # will be true once we have managed to initialize tank
 
     _schema = tank_engine_schema
 
@@ -202,6 +202,10 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
 
     ## An environment variable which is supposed to be set with the app specific startup directory
     host_app_evar = None
+
+    ## If False, the variables above don't matter, and we don't mess with tank, which essentially
+    # leaves us with launching any application
+    init_tank = True
     
     ## -- End Subclass Configuration -- @}
 
@@ -209,7 +213,8 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         """Intiailize our member variables"""
         super(TankEngineDelegate, self).__init__(*args, **kwargs)
         self._context_paths = list()
-        self._tank_initialized = False
+        # pretend we are 'ready to go', if we don't have to do any tank setup
+        self._may_start_process = not self.init_tank
 
     def _extract_path(self, arg):
         """intercept paths given on the commandline"""
@@ -246,6 +251,9 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         """Place boot-stap environment variables, based on information received from the tank studio installation"""
         executable, env, new_args, cwd = super(TankEngineDelegate, self).pre_start(executable, env, args, cwd, resolve)
         rval = (executable, env, new_args, cwd)
+        if not self.init_tank:
+            return rval
+        # end bail out early without tank
 
         actual_executable = self._actual_executable()
         self._context_paths.append(actual_executable)
@@ -323,13 +331,15 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
                         host_app_name, err)
         # end ignore exception
 
-        self._tank_initialized = True
+        self._may_start_process = True
         return rval
 
     def environment_storage_chunk_size(self):
         """@return a value small enough to work with shell invocation, we we are about to do so.
         The latter is only the case if shotgun invoked us through the browser.
-        For some reason, if the value is higher than that, it gets replaced by the variable name ... ."""
+        For some reason, if the value is higher than that, it gets replaced by the variable name ... .
+        @NOTE: shotgun lauches in bash V1 for some reason, whereas the standard shell version is V2.
+        Maybe this affects the environment variable behaviour ?"""
         if not self._is_launched_by_shotgun():
             return super(TankEngineDelegate, self).environment_storage_chunk_size()
         return 2048
@@ -351,7 +361,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         # Here it's the only purpose to have tank really, so we abort loudly if we failed
         # Even though it's not without issues and special cases, it's easier to use the shell than to implement 
         # it on non-posix platforms ... .
-        if not self._tank_initialized:
+        if not self._may_start_process:
             # Previously printed errors will show up in shotgun browser
             sys.exit(1)
         # end quit early if we failed
@@ -424,6 +434,17 @@ class MayaTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
     host_app_evar = 'PYTHONPATH'
 
 # end class NukeTankEngineDelegate
+
+
+class AfterEffectsTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+    """This delegate has no effect, as there is no engine. However, we want to startup 
+    AE from within tank"""
+    __slots__ = ()
+
+    init_tank = False
+    
+
+# end class HieroTankEngineDelegate
 
 
 ## -- End Application Specific Tank Delegates -- @}
