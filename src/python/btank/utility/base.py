@@ -72,7 +72,6 @@ def link_bootstrapper(source, destination, posix=True, symlink_source=None, appe
     if os.name == 'posix' and posix:
         try:
             symlink_source.symlink(destination)
-            destination.chmod(octal('0555'))
         except OSError:
             # In this case, even on linux we may have to use fake symlinks. To us, it doesn't matter really
             make_winlink()
