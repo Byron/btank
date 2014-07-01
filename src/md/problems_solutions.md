@@ -62,7 +62,15 @@ Tank's implementation is minimal and allows only for setting arguments and envir
     + Full control over environment variables and the tank startup process, which would allow to intercept launch requests entirely and would allow to speed up launching considerable. This is because I think the information tank wants within the host application can easily be obtained under 0.5s, which adds to the 3s the bprocess wrapper needs on a slow SMB share.
     + Tank would become (more) relocatable, as we control the contents of args (`--pc=PATH`) and environment variables (`TANK_CURRENT_PC`). However, it's unclear to what extend the contents of the various other path containing files are affecting it. For some reason I am optimistic about this though.
 
+# Process Launching with Deadline
 
+Deadline is a nice example of an epic fail, considering that it can't execute a script thanks to its .NET (and `mono`) roots. IronPython can't just execute something using built-in kernel functionality, but uses .NET to do it. The latter will only allow, as common on windows, 'real' executables. Therefore, a script that executes just fine with `subprocess.Popen(shell=False)` will not work when started from IronPython.
+
+**Solutions**
+
+1.  Use cxfreeze to create a real bootstrapper executable.
+    + `cxfreeze -s --include-modules=__future__,imp,glob,shutil,platform,getpass,cProfile,json,logging.config,urllib2,uuid,distutils.version,sqlite3,code <bootstrapper>`
+        - every module from and including `urllib2` is what was required by tank to come up, which in turn is done by the tank specific delegate the bootstrapper should be using (see `btank-plugins/bprocess-delegates.py`)
 
 # Templates and Folder Creation
 
