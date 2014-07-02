@@ -44,7 +44,8 @@ tank_engine_schema = KeyValueStoreSchema('%s.engine-delegate' % root_key,
                                                                   'host_app_name' : str,
                                                                   'entity_type' : str,
                                                                   'entity_id' : int,
-                                                                  'force_tank_from_entity' : False})
+                                                                  'force_tank_from_entity' : False,
+                                                                  'create_folders' : True})
 
 tank_command_schema = KeyValueStoreSchema('%s.command-delegate' % root_key, {'app_name' : 
                                                                                 dict(prefix = str,
@@ -245,7 +246,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
                 msg = "Was forced to create tank from entity, but didn't get entity information"
                 raise AssertionError(msg)
             # end 
-            
+
             return sgtk.tank_from_entity(settings.entity_type, settings.entity_id), 'context_path_not_set'
         else:
             for path in paths:
@@ -292,13 +293,18 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
             # Most of the time though, applictions would be launched through shotgun, in one way or another, 
             # which comes with a context from an entity. Let's be a good citizen though, even though I think
             # folders should be created after the application actually launched (by the application)
-            log.debug("Creating folders for %s %s, %s" % (settings.entity_type, settings.entity_id, host_app_name))
-            try:
-                tk.create_filesystem_structure(settings.entity_type, settings.entity_id, engine=host_app_name)
-            except Exception as err:
-                log.error("Tank folder creation failed with error: %s", err)
-                # NOTE: tank itself aborts here, but I want to see if this is truly required
-            # end ignore errors, lets start the app
+            # NOTE: Depending on the used hooks, this mail fail at boot time as we only have a minimal setup
+            # It's up to the one setting up the boot-time paths to make this work, or to the delegate 
+            # implementation to disable this as desired
+            if settings.create_folders:
+                log.debug("Creating folders for %s %s, %s" % (settings.entity_type, settings.entity_id, host_app_name))
+                try:
+                    tk.create_filesystem_structure(settings.entity_type, settings.entity_id, engine=host_app_name)
+                except Exception as err:
+                    log.error("Tank folder creation failed with error: %s", err)
+                    # NOTE: tank itself aborts here, but I want to see if this is truly required
+                # end ignore errors, lets start the app
+            # end create folders only if this is allowed
         else:
             ctx = tk.context_from_path(context_path)
         # end init context
