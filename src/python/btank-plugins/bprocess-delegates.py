@@ -43,7 +43,8 @@ tank_engine_schema = KeyValueStoreSchema('%s.engine-delegate' % root_key,
                                                                          type = 'app_store'),
                                                                   'host_app_name' : str,
                                                                   'entity_type' : str,
-                                                                  'entity_id' : int})
+                                                                  'entity_id' : int,
+                                                                  'force_tank_from_entity' : False})
 
 tank_command_schema = KeyValueStoreSchema('%s.command-delegate' % root_key, {'app_name' : 
                                                                                 dict(prefix = str,
@@ -229,21 +230,31 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         return bool(self.settings_value().host_app_name)
 
     @classmethod
-    def _tank_instance(cls, env, paths):
+    def _tank_instance(cls, env, paths, settings):
         """@return the initialized tank package that exists at TANK_STUDIO_INSTALL_TREE, and the context path which created
         the instance
         @param env enviornment of the to-be-started process
         @param paths from which to pull the context. They should be sorted from most specialized to to least 
         specialized
+        @param settings matching the tank_engine_schema
         @throws EnvironmentError if we couldn't find it"""
         sgtk = cls._sgtk_module(env)
 
-        for path in paths:
-            try:
-                return sgtk.tank_from_path(path), path
-            except Exception:
-                pass
-        # end for each path to try
+        if settings.force_tank_from_entity:
+            if not (settings.entity_type and settings.entity_id):
+                msg = "Was forced to create tank from entity, but didn't get entity information"
+                raise AssertionError(msg)
+            # end 
+            
+            return sgtk.tank_from_entity(settings.entity_type, settings.entity_id), 'context_path_not_set'
+        else:
+            for path in paths:
+                try:
+                    return sgtk.tank_from_path(path), path
+                except Exception:
+                    pass
+            # end for each path to try
+        # end handle tank instantiation mode
 
         raise EnvironmentError("Failed to initialize tank from any of the given context paths: %s" % ', '.join(paths))
 
@@ -259,14 +270,16 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         self._context_paths.append(actual_executable)
         self._context_paths.append(cwd)
 
+        settings = self.settings_value()
+
         try:
-            tk, context_path = self._tank_instance(env, sorted(self._context_paths, reverse=True))
+            # NOTE: The reason we always go for a tank by path is that it will be coming up much faster that way !
+            tk, context_path = self._tank_instance(env, sorted(self._context_paths, reverse=True), settings)
         except Exception as err:
             log.error("Failed to instantiate tank - application will come up without it ! Error was: %s", err)
             return rval
         # end ignore exceptions
 
-        settings = self.settings_value()
         host_app_name = self._host_app_name(actual_executable)
 
         # Get the most specific context, and feed it to the engine via env vars
