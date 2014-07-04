@@ -330,6 +330,8 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         env['TANK_CONTEXT'] = tank.context.serialize(ctx)
         env['TANK_ENGINE'] = 'tk-' + host_app_name
 
+        log.log(logging.TRACE, "Using tank engine context: '%s'", ctx)
+
         startup_path = Path(dsc.get_path()) / 'app_specific' / host_app_name / 'startup'
         if not startup_path.isdir():
             log.error("No engine startup configuration found at '%s' - tank will be disabled", startup_path)
@@ -406,6 +408,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
         @throws any exception to disable tank
         @default implementation will just prepend the startup directory to the configured host_app_evar variable"""
         if self.host_app_evar is not None:
+            log.log(logging.TRACE, "Setting engine startup environment: %s = %s", self.host_app_evar, startup_tree)
             update_env_path(self.host_app_evar, startup_tree, append = False, environment = env)
         else:
             raise NotImplementedError("Either set the 'host_app_evar' class member, or implement this method")
