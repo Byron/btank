@@ -9,7 +9,7 @@
 from __future__ import unicode_literals
 from butility.future import str
 __all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate', 'NukeTankEngineDelegate', 
-           'MayaTankEngineDelegate', 'AfterEffectsTankEngineDelegate']
+           'MayaTankEngineDelegate', 'ShotgunLaunchableTankEngineDelegate']
 
 import os
 import sys
@@ -453,15 +453,14 @@ class MayaTankEngineDelegate(TankEngineDelegate):
 # end class NukeTankEngineDelegate
 
 
-class AfterEffectsTankEngineDelegate(TankEngineDelegate):
-    """This delegate has no effect, as there is no engine. However, we want to startup 
-    AE from within tank"""
+class ShotgunLaunchableTankEngineDelegate(TankEngineDelegate):
+    """This delegate has no effect, as there is no engine. It should be used to allow starting any program 
+    using the shotgun menu though. This works as this delegate will enforce forking."""
     __slots__ = ()
 
     init_tank = False
     
-
-# end class HieroTankEngineDelegate
+# end class ShotgunLaunchableTankEngineDelegate
 
 
 ## -- End Application Specific Tank Delegates -- @}
