@@ -21,7 +21,8 @@ from butility import (Path,
                       update_env_path)
 from bprocess import (process_schema,
                       ProcessController,
-                      ProcessControllerDelegate)
+                      ProcessControllerDelegate,
+                      ProxyProcessControllerDelegate)
 from bkvstore import KeyValueStoreSchema
 from bapp import ApplicationSettingsMixin
 
@@ -93,7 +94,7 @@ class TankDelegateCommonMixin(object):
 
 
 
-class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, bapp.plugin_type()):
+class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate):
     """process arguments to be suitable for tank.
     Additinoally we can intercept launch commands and execute them ourselves.
     """
@@ -186,7 +187,7 @@ class TankCommandDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ba
 # end class TankCommandDelegate
 
 
-class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, ApplicationSettingsMixin):
+class TankEngineDelegate(TankDelegateCommonMixin, ProxyProcessControllerDelegate, ApplicationSettingsMixin):
     """A delegate to startup any tank engine, using the bootstrapper provided by the multi-launch app.
     The context will be created using tank's own mechanisms.
     """
@@ -425,7 +426,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProcessControllerDelegate, App
 # ------------------------------------------------------------------------------
 ## @{
 
-class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+class HieroTankEngineDelegate(TankEngineDelegate):
     __slots__ = ()
 
     host_app_name = 'hiero'
@@ -434,7 +435,7 @@ class HieroTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
 # end class HieroTankEngineDelegate
 
 
-class NukeTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+class NukeTankEngineDelegate(TankEngineDelegate):
     __slots__ = ()
 
     host_app_name = 'nuke'
@@ -443,7 +444,7 @@ class NukeTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
 # end class NukeTankEngineDelegate
 
 
-class MayaTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+class MayaTankEngineDelegate(TankEngineDelegate):
     __slots__ = ()
 
     host_app_name = 'maya'
@@ -452,7 +453,7 @@ class MayaTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
 # end class NukeTankEngineDelegate
 
 
-class AfterEffectsTankEngineDelegate(TankEngineDelegate, bapp.plugin_type()):
+class AfterEffectsTankEngineDelegate(TankEngineDelegate):
     """This delegate has no effect, as there is no engine. However, we want to startup 
     AE from within tank"""
     __slots__ = ()
