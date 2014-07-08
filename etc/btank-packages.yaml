@@ -59,6 +59,19 @@ packages:
       variables:
         TANK_ENGINE: tk-nuke
 
+  #############################
+  btank-delegates-package:  ##
+  ###########################
+    name: Delegates for usage with Tank
+    description: |
+      Allows to use the ShotgunLaunchableTankEngineDelegate from applications which don't even have tank support,
+      without forcing them to pull btank.
+      That way, these applications can easily be launched from shotgun.
+    boot:
+      # make sure standard delegates are available to help dealing with tank
+      python_paths: '{yaml.btank-packages.dirname}/../src/python'
+      import: btank-plugins.bprocess-delegates
+
   ###################
   btank-package: ###
   #################
@@ -68,10 +81,7 @@ packages:
     requires:
       - bcore
       - tank-studio-install
-    boot:
-      # make sure standard delegates are available to help dealing with tank
-      python_paths: '{yaml.btank-packages.dirname}/../src/python'
-      import: btank-plugins.bprocess-delegates
+      - btank-delegates-package
     description: |
       Make bcore Tank use bcore facilities to marry the two systems seamlessly. 
       Or in other words: Advantages of bcore with the gui features of tank.
