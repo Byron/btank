@@ -284,7 +284,9 @@ class SetupTankProject(object):
                                                              (bootstrapper_path, posix_symlink_path, ''))):
             if not symlink_source:
                 continue
-            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix, symlink_source=symlink_source)
+            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix, 
+                                                                  symlink_source=symlink_source, 
+                                                  enforce_winlink_entry=settings.bootstrapper.enforce_winlink_entry)
         # end for each os name
 
         # Finally, setup the tank configuration to use our bootstrapper

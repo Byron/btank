@@ -21,6 +21,7 @@ root_key = 'btank'
 setup_project_schema = KeyValueStoreSchema('%s.setup-project' % root_key, 
                                                      dict(bootstrapper = dict(host_path = Path,
                                                                               windows_symlink_path = Path,
-                                                                              posix_symlink_path = Path),
+                                                                              posix_symlink_path = Path,
+                                                                              enforce_winlink_entry = True),
                                                           tank = dict(windows_python2_interpreter_path = Path,
                                                                       configuration_uri = str)))

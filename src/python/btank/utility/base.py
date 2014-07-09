@@ -40,7 +40,7 @@ def core_hook_type():
     base_hook_file = tank_root / 'hooks' / (calling_module.namebase() + '.py')
     return loader.load_plugin(base_hook_file , Hook)
 
-def link_bootstrapper(source, destination, posix=True, symlink_source=None, append=True):
+def link_bootstrapper(source, destination, posix=True, symlink_source=None, append=True, enforce_winlink_entry=False):
     """Setup wrapper files for all platforms in the given destination_tree
     @param source the original wrapper's Path, absolute or relative
     usually something like .../bin/posix/anyname.
@@ -58,20 +58,27 @@ def link_bootstrapper(source, destination, posix=True, symlink_source=None, appe
     so we keep things explicit here
     @param append if True, and if a windows compatible symlink is created, we will append to the file. This is useful
     if different platforms have different (possibly absolute) locations at which to find their bootstrapper.
+    @param enforce_winlink_entry if True, the pseudo symlink file used on smb or windows shares is always written
+    with the respective symlink_source, which is useful if the process has a posix filesystem, which is shared as 
+    smb to others which renders symbolic links working, but not unreadable
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)
     symlink_source = symlink_source or source
 
-    def make_winlink():
+    def make_winlink(copy=True):
         """create a file-based symlink"""
         (destination.dirname() / Bootstrapper.boot_info_file).write_text(str(symlink_source + '\n'), append=append)
-        source.copyfile(destination)
+        if copy:
+            source.copyfile(destination)
     # end utility
 
     if os.name == 'posix' and posix:
         try:
             symlink_source.symlink(destination)
+            if enforce_winlink_entry:
+                make_winlink(copy=False)
+            # end handle enforce winlink
         except OSError:
             # In this case, even on linux we may have to use fake symlinks. To us, it doesn't matter really
             make_winlink()
