@@ -100,6 +100,7 @@ This is why daemons should be prepared to crash and respawn whenever they run ou
     - It's actually exactly the same as what's done with `tk-config-default` or `tk-config-multiroot`
 - install command rewrites your own configuration files. This is always undesirable, as formatting can change considerably. A good system would be to write files containing the required changes based on the current settings, which is consecutively merged in  
 - during deferred folder creation, the launch-app (or however starts up the host application) has to unconditionally create folders for a particular entity, which adds a few seconds to the application startup time. If folder creation would be triggered at the time a template is used, and only if the folder leading up to some file doesn't exist, this could be circumvented.
+- When creating a new project, the location of that project determined by the project configuration itself, and there is no easy way to override it. Even though it's possible to place the tank configuration anywhere, information about where the project data along with some caches resides is determined solely by the `roots.yml` coming which should be a part of the tank configuration you are using as template. That way, it's difficult to have a standard studio configuration yet to place new projects using it in different shares to balance load.
 
 
 

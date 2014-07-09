@@ -78,7 +78,7 @@ class SetupTankProject(object):
     # @{
 
     @contextmanager
-    def _tank_monkey_patch(self):
+    def _tank_monkey_patch(self, storage_roots):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
         the special way of tank handling its bootstrapping is not required.
@@ -86,24 +86,56 @@ class SetupTankProject(object):
         """
         fun_name = '_get_current_core_file_location'
         prev_fun = getattr(setup_project, fun_name, None)
-        assert prev_fun, "tank code base changed - monkey patcher needs a review !"
+        msg = "tank code base changed - monkey patcher needs a review !"
+        assert prev_fun, msg
+
+        tk_installer_name = 'TankConfigInstaller'
+        prev_installer = getattr(setup_project, tk_installer_name, None)
+        assert prev_installer, msg
 
         def return_locations():
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
             return dict((p, 'not required due to btank interception') for p in ('Windows', 'Darwin', 'Linux'))
             return res
         # end
+
+        # The requirement of this installer is to dynamically adjust this information to match 
+        # whatever the user has configured as a data root
+        def tank_installer(*args, **kwargs):
+            installer = prev_installer(*args, **kwargs)
+
+            # Now rewrite the roots file and update the internal data field of the instance to match
+            # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
+            # This kind of forces it to be stable. This would feel better to have an official function to do it ... .
+            assert hasattr(installer, '_cfg_folder'), msg
+            assert hasattr(installer, '_roots_data'), msg
+
+            roots_file = Path(installer._cfg_folder) / 'core' / 'roots.yml'
+            try:
+                YAMLStreamSerializer().serialize(storage_roots, open(roots_file, 'w'))
+            except Exception as err:
+                raise AssertionError("Failed to re-write roots file at '%s' with error: %s" % (roots_file, err))
+            # end handle exceptions
+
+            # let's just be sure our copy isn't affected
+            installer._roots_data = storage_roots.copy()
+            return installer
+        # end 
             
         setattr(setup_project, fun_name, return_locations)
+        setattr(setup_project, tk_installer_name, tank_installer)
         yield
         setattr(setup_project, fun_name, prev_fun)
+        setattr(setup_project, tk_installer_name, prev_installer)
         # end do or undo
 
     def _resolve_local_storage_names(self, sg, log, names):
         """@return a dict('name' : {'linux_path' : str', 'mac_path' : str, 'windows_path' : str}) 
-        with all the given LocalStorage names"""
+        with all the given LocalStorage names
+        We filter the list of valid roots by name"""
         storages = sg.find('LocalStorage', list(), ['code', 'linux_path', 'mac_path', 'windows_path'])
-        res = dict((s.pop('code'), s) for s in storages)
+        res = dict((s.pop('code'), s) for s in storages if s['code'] in names or s['code'].lower() in names)
+        assert res, "Name filter seems to have yielded nothing - there is no storage matching '%s'" % ', '.join(names)
         return res
 
     def _multi_platform_project_tree(self, storage_names, storage_dict, project_folder_name):
@@ -201,29 +233,16 @@ class SetupTankProject(object):
 
         # For the next step to work, tank really wants the project directory to exist. Fair enough
         tank_os_name = platform_tank_map[sys.platform]
+        tank_os_root = Path(params['config_path_%s' % tank_os_name])
         project_os_root = project_roots['%s_path' % tank_os_name]
         project_os_root.mkdir()
 
         # nothing useful in return
         cmd = tank.get_command('setup_project')
         cmd.set_logger(log)
-        with self._tank_monkey_patch():
+        with self._tank_monkey_patch(storage_roots):
             cmd.execute(params)
         # end assure monkey-patch gets undone
-
-
-        # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
-        # This kind of forces it to be stable. This would feel better to have an official function to do it ... .
-        tank_os_root = Path(params['config_path_%s' % tank_os_name])
-
-        roots_file = tank_os_root / 'config' / 'core' / 'roots.yml'
-        assert roots_file.isfile(), "Didn't find roots file at '%s'" % roots_file
-
-        try:
-            YAMLStreamSerializer().serialize(storage_roots, open(roots_file, 'w'))
-        except Exception as err:
-            raise AssertionError("Failed to re-write roots file at '%s' with error: %s" % (roots_file, err))
-        # end handle exceptions
 
         # Setup bootstrappers for posix and the rest
         for posix, (path, symlink_source, ext) in enumerate(((bootstrapper_path, windows_symlink_path, '.py'),

@@ -15,7 +15,8 @@ install:
   # prepare fixture, which has to be downloaded manually
   - src/python/btank/tests/fixtures/setup_fixtures
   # For tank, wihtout a setup.py, and for the test-utilities, we will have to clone and do some path-magic
-  - git clone https://github.com/shotgunsoftware/tk-core
+  # Higher versions have to be tested specifically
+  - git clone --branch=v0.14.49 https://github.com/shotgunsoftware/tk-core
 script:
   - 'export PYTHONPATH=$PWD/tk-core/python:$PWD/tk-core/tests/python && cd src/python/btank/tests && nosetests --with-coverage . utility/patch/test_patch.py'
 after_success:
