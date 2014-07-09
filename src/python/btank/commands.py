@@ -78,7 +78,7 @@ class SetupTankProject(object):
     # @{
 
     @contextmanager
-    def _tank_monkey_patch(self, storage_roots):
+    def _tank_monkey_patch(self, storage_roots, primary_storage_name):
         """Make sure tank doens't get into our way.
         As the tank executable is intercepted, and actually calling a wrapped and preconfigured executable,
         the special way of tank handling its bootstrapping is not required.
@@ -101,26 +101,52 @@ class SetupTankProject(object):
 
         # The requirement of this installer is to dynamically adjust this information to match 
         # whatever the user has configured as a data root
-        def tank_installer(*args, **kwargs):
-            installer = prev_installer(*args, **kwargs)
+        class tank_installer(prev_installer):
 
-            # Now rewrite the roots file and update the internal data field of the instance to match
-            # Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
-            # This kind of forces it to be stable. This would feel better to have an official function to do it ... .
-            assert hasattr(installer, '_cfg_folder'), msg
-            assert hasattr(installer, '_roots_data'), msg
+            def __init__(self, *args, **kwargs):
+                super(tank_installer, self).__init__(*args, **kwargs)
+                assert hasattr(self, '_cfg_folder'), msg
+                assert hasattr(self, '_roots_data'), msg
+                assert hasattr(prev_installer, '_process_config'), msg
 
-            roots_file = Path(installer._cfg_folder) / 'core' / 'roots.yml'
-            try:
-                YAMLStreamSerializer().serialize(storage_roots, open(roots_file, 'w'))
-            except Exception as err:
-                raise AssertionError("Failed to re-write roots file at '%s' with error: %s" % (roots_file, err))
-            # end handle exceptions
+            def _process_config(self, *args, **kwargs):
+                """rewrite the roots file and update the internal data field of the instance to match
+                Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
+                This kind of forces it to be stable. This would feel better to have an official function to do it"""
+                cfg_folder, cfg_mode = super(tank_installer, self)._process_config(*args, **kwargs)
 
-            # let's just be sure our copy isn't affected
-            installer._roots_data = storage_roots.copy()
-            return installer
-        # end 
+                roots_file = Path(cfg_folder) / 'core' / 'roots.yml'
+                inst_storage_roots = storage_roots.copy()
+
+                # Tank really needs this one, which makes relocating a project to anything not primary difficult
+                if constants.PRIMARY_STORAGE_NAME not in inst_storage_roots:
+                    inst_storage_roots[constants.PRIMARY_STORAGE_NAME] = inst_storage_roots[primary_storage_name].copy()
+                # end
+
+                try:
+                    YAMLStreamSerializer().serialize(inst_storage_roots, open(roots_file, 'w'))
+                except Exception as err:
+                    raise AssertionError("Failed to re-write roots file at '%s' with error: %s" % (roots_file, err))
+                # end handle exceptions
+
+                return cfg_folder, cfg_mode
+
+            def validate_roots(self, *args, **kwargs):
+                """As the original implementation will re-retrieve the root locations from shotgun, our 
+                customization especially for the primary root will not hold. 
+                Therefore we have to auto-validate all storages.
+                NOTE: We could possibly mock the underlying shotgun instance, or re-implement part of the checking
+                here ... """
+                new_roots = deepcopy(self._roots_data)
+                res = list()
+                for name, info in new_roots.items():
+                    info['code'] = name
+                    res.append(info)
+                # end
+                return res
+
+                
+        # end intaller
             
         setattr(setup_project, fun_name, return_locations)
         setattr(setup_project, tk_installer_name, tank_installer)
@@ -138,13 +164,20 @@ class SetupTankProject(object):
         assert res, "Name filter seems to have yielded nothing - there is no storage matching '%s'" % ', '.join(names)
         return res
 
-    def _multi_platform_project_tree(self, storage_names, storage_dict, project_folder_name):
+    def _primary_storage_name(self, storage_names):
+        """@return the name of the alleged primary storage, which must be contained in the given storage_names
+        previously returned by _project_storage_names.
+        This is the storage which will keep the tank file cache, and it MUST be the one containing the 
+        pipeline confguration"""
+        return storage_names[0]
+
+    def _multi_platform_project_tree(self, storage_names, storage_dict, project_folder_name, primary_storage_name):
         """@return a dict('linux_path' : Path, 'mac_path' : Path,'windows_path' : Path) to directories on disk which 
         should contain the given project, based on the information in the storage_dict.
-        Usually, you pick a storage name, and return the information in the storage dict"""
-        name = storage_names[0]
+        Usually, you pick a storage name, and return the information in the storage dict.
+        These will be used as location for the pipeline configuration, and the tank related caches"""
         try:
-            s = storage_dict[name]
+            s = storage_dict[primary_storage_name]
         except KeyError:
             raise AssertionError("local storage named '%s' didn't exist - create it in shotgun and retry" % name)
         # end catch possible user errors
@@ -218,7 +251,9 @@ class SetupTankProject(object):
         assert storage_roots, "Would have expected at least one storage root"
 
         # we simply use the first storage as the one keeping the project
-        project_roots = self._multi_platform_project_tree(storage_names, storage_roots, project_folder_name)
+        primary_storage_name = self._primary_storage_name(storage_names)
+        project_roots = self._multi_platform_project_tree(storage_names, storage_roots, 
+                                                          project_folder_name, primary_storage_name)
         tank_conftree = lambda p: project_roots[p] / self.tank_subtree
 
         # setup parameters
@@ -240,7 +275,7 @@ class SetupTankProject(object):
         # nothing useful in return
         cmd = tank.get_command('setup_project')
         cmd.set_logger(log)
-        with self._tank_monkey_patch(storage_roots):
+        with self._tank_monkey_patch(storage_roots, primary_storage_name):
             cmd.execute(params)
         # end assure monkey-patch gets undone
 
