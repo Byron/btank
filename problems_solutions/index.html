@@ -132,6 +132,9 @@
         <li class="main "><a href="#process-launching">Process Launching</a></li>
         
     
+        <li class="main "><a href="#process-launching-with-deadline">Process Launching with Deadline</a></li>
+        
+    
         <li class="main "><a href="#templates-and-folder-creation">Templates and Folder Creation</a></li>
         
     
@@ -210,6 +213,18 @@
 <li>it's possible to create an 'evolutionary' configuration and adjust the <code>after_project_create.py</code> callback (erm, hook), which has enough information to post-process the phase 1 or phase 2 bootstrappers. This would fit well, as tank supports choosing any git-controlled configuration - <code>btank</code> could just provide it's own.</li>
 <li>Full control over environment variables and the tank startup process, which would allow to intercept launch requests entirely and would allow to speed up launching considerable. This is because I think the information tank wants within the host application can easily be obtained under 0.5s, which adds to the 3s the bprocess wrapper needs on a slow SMB share.</li>
 <li>Tank would become (more) relocatable, as we control the contents of args (<code>--pc=PATH</code>) and environment variables (<code>TANK_CURRENT_PC</code>). However, it's unclear to what extend the contents of the various other path containing files are affecting it. For some reason I am optimistic about this though.</li>
+</ul>
+</li>
+</ol>
+<h1 id="process-launching-with-deadline">Process Launching with Deadline</h1>
+<p>Deadline is a nice example of an epic fail, considering that it can't execute a script thanks to its .NET (and <code>mono</code>) roots. IronPython can't just execute something using built-in kernel functionality, but uses .NET to do it. The latter will only allow, as common on windows, 'real' executables. Therefore, a script that executes just fine with <code>subprocess.Popen(shell=False)</code> will not work when started from IronPython.</p>
+<p><strong>Solutions</strong></p>
+<ol>
+<li>Use cxfreeze to create a real bootstrapper executable.<ul>
+<li><code>cxfreeze -s --include-modules=__future__,imp,glob,shutil,platform,getpass,cProfile,json,logging.config,urllib2,uuid,distutils.version,sqlite3,code &lt;bootstrapper&gt;</code><ul>
+<li>every module from and including <code>urllib2</code> is what was required by tank to come up, which in turn is done by the tank specific delegate the bootstrapper should be using (see <code>btank-plugins/bprocess-delegates.py</code>)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ol>
