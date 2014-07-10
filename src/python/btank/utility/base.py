@@ -60,7 +60,8 @@ def link_bootstrapper(source, destination, posix=True, symlink_source=None, appe
     if different platforms have different (possibly absolute) locations at which to find their bootstrapper.
     @param enforce_winlink_entry if True, the pseudo symlink file used on smb or windows shares is always written
     with the respective symlink_source, which is useful if the process has a posix filesystem, which is shared as 
-    smb to others which renders symbolic links working, but not unreadable
+    smb to others which renders symbolic links working, but not unreadable.
+    This is only relevant for posix bootstrapper links
     @return newly and actually created location of destination"""
     source = Path(source)
     destination = Path(destination)

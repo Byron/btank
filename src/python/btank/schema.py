@@ -22,6 +22,7 @@ setup_project_schema = KeyValueStoreSchema('%s.setup-project' % root_key,
                                                      dict(bootstrapper = dict(host_path = Path,
                                                                               windows_symlink_path = Path,
                                                                               posix_symlink_path = Path,
-                                                                              enforce_winlink_entry = True),
+                                                                              enforce_winlink_entry = True,
+                                                                              assume_smb_share=False),
                                                           tank = dict(windows_python2_interpreter_path = Path,
                                                                       configuration_uri = str)))

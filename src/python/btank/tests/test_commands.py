@@ -149,7 +149,8 @@ class CommandTests(TankTestCase):
         settings = DictObject({'bootstrapper' : {'host_path' : pb, # will work on all platforms in our case
                                                  'posix_symlink_path' : pb, 
                                                  'windows_symlink_path' : wb,
-                                                 'enforce_winlink_entry' : True},
+                                                 'enforce_winlink_entry' : True,
+                                                 'assume_smb_share' : False},
                                'tank' : {'windows_python2_interpreter_path' : 'c:\\foo',
                                          'configuration_uri': config_uri}})
         location = stp.handle_project_setup(sg, log, DictObject(project), settings)

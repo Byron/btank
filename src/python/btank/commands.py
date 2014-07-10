@@ -284,6 +284,9 @@ class SetupTankProject(object):
                                                              (bootstrapper_path, posix_symlink_path, ''))):
             if not symlink_source:
                 continue
+            # disable posix if smb must be assumed
+            if settings.bootstrapper.assume_smb_share:
+                posix = False
             link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix, 
                                                                   symlink_source=symlink_source, 
                                                   enforce_winlink_entry=settings.bootstrapper.enforce_winlink_entry)
