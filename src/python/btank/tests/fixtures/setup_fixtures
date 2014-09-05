@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
 base=`dirname $0`
-git clone https://github.com/shotgunsoftware/tk-config-default $base/tank-default-config
+# clone and checkout last known configuration
+git clone https://github.com/shotgunsoftware/tk-config-default $base/tank-default-config && cd $base/tank-default-config && git checkout 8ae9917
