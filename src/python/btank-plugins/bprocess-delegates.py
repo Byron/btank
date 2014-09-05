@@ -13,11 +13,8 @@ __all__ = ['TankCommandDelegate', 'TankEngineDelegate', 'HieroTankEngineDelegate
 
 import os
 import sys
-import subprocess
 
-import bapp
 from butility import (Path,
-                      abstractmethod,
                       update_env_path)
 from bprocess import (process_schema,
                       ProcessController,

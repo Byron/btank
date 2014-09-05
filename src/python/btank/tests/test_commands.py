@@ -12,23 +12,18 @@
 # from butility.future import str
 __all__ = ['SetupProjectPatcher']
 
-import os
 import logging
 
-from mock import (Mock,
-                  patch)
+from mock import patch
 
 from .base import (TankTestCase,
                    with_tank_sandbox)
 import bapp
 from bapp.tests import with_application
-from bkvstore import KeyValueStoreProvider
 from butility.tests import with_rw_directory
 from butility import (DictObject,
-                      Path,
-                      DEFAULT_ENCODING)
+                      Path)
 
-from tank.deploy.tank_commands import setup_project
 import tank.platform.constants as constants
 import tank
 
@@ -121,10 +116,11 @@ class CommandTests(TankTestCase):
         # prepare the mock db - reuse the tank implementation as it's already what tank needs
         project = {      'type': 'Project',
                          'id': 1,
-                         'sg_project_folder' : 'project_folder',
+                         'sg_project_folder' : u'project_folder',
                          'sg_project_short_name' : 'testy',
                          'tank_name': None,
-                         'name': 'project_name' }
+                         # 'name': u'project_name_™äü' } // tank can't do unicode, but we can
+                         'name': u'project_name' }
 
         local_storage = {'code' : constants.PRIMARY_STORAGE_NAME,
                          'mac_path' : str(rw_dir),

@@ -13,8 +13,7 @@ import inspect
 import sys
 import os
 
-from butility import (Path,
-                      octal)
+from butility import Path
 from sgtk import Hook
 from sgtk import loader
 

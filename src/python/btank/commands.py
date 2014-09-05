@@ -16,8 +16,8 @@ import sys
 from copy import deepcopy
 from contextlib import contextmanager
 
-from butility import (DictObject,
-                      Path)
+from butility import (Path,
+                      DEFAULT_ENCODING)
 
 from bkvstore import YAMLStreamSerializer
 import tank
@@ -29,6 +29,13 @@ from .utility import (platform_tank_map,
 from .utility.patch import PatchSet
 from butility.compat import StringIO
 
+
+def sanstr(string):
+    """Assure we can handle unicode characters.
+    It's terrible to deal with this in py2"""
+    if isinstance(string, bytes):
+        return string.decode(DEFAULT_ENCODING)
+    return string
 
 class SetupTankProject(object):
     """Should run a reaction to a newly created Shotgun project and sets it up to work with btank.
@@ -96,7 +103,6 @@ class SetupTankProject(object):
         def return_locations():
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
             return dict((p, 'not required due to btank interception') for p in ('Windows', 'Darwin', 'Linux'))
-            return res
         # end
 
         # The requirement of this installer is to dynamically adjust this information to match 
@@ -115,7 +121,7 @@ class SetupTankProject(object):
                 This kind of forces it to be stable. This would feel better to have an official function to do it"""
                 cfg_folder, cfg_mode = super(tank_installer, self)._process_config(*args, **kwargs)
 
-                roots_file = Path(cfg_folder) / 'core' / 'roots.yml'
+                roots_file = Path(sanstr(cfg_folder)) / 'core' / 'roots.yml'
                 inst_storage_roots = storage_roots.copy()
 
                 # Tank really needs this one, which makes relocating a project to anything not primary difficult
@@ -179,12 +185,12 @@ class SetupTankProject(object):
         try:
             s = storage_dict[primary_storage_name]
         except KeyError:
-            raise AssertionError("local storage named '%s' didn't exist - create it in shotgun and retry" % name)
+            raise AssertionError("local storage named '%s' didn't exist - create it in shotgun and retry" % primary_storage_name)
         # end catch possible user errors
 
         s = deepcopy(s)
         for platform, path in s.items():
-            s[platform] = Path(path) / project_folder_name
+            s[platform] = Path(sanstr(path)) / sanstr(project_folder_name)
         # end convert to path 
         return s
 
@@ -260,15 +266,15 @@ class SetupTankProject(object):
         # Note that the storage roots will just remain unchanged until everything was created
         # We will post-process the roots.yml to match what's configured for the project
         params = dict(project_id          = project.id,
-                      project_folder_name = str(project_folder_name),
-                      config_uri          = str(tank_config_uri),
-                      config_path_mac     = str(tank_conftree('mac_path')),
-                      config_path_linux   = str(tank_conftree('linux_path')),
-                      config_path_win     = str(tank_conftree('windows_path')))
+                      project_folder_name = project_folder_name.encode(DEFAULT_ENCODING),
+                      config_uri          = tank_config_uri.encode(DEFAULT_ENCODING),
+                      config_path_mac     = tank_conftree('mac_path').encode(DEFAULT_ENCODING),
+                      config_path_linux   = tank_conftree('linux_path').encode(DEFAULT_ENCODING),
+                      config_path_win     = tank_conftree('windows_path').encode(DEFAULT_ENCODING))
 
         # For the next step to work, tank really wants the project directory to exist. Fair enough
         tank_os_name = platform_tank_map[sys.platform]
-        tank_os_root = Path(params['config_path_%s' % tank_os_name])
+        tank_os_root = Path(sanstr(params['config_path_%s' % tank_os_name]))
         project_os_root = project_roots['%s_path' % tank_os_name]
         project_os_root.mkdir()
 
