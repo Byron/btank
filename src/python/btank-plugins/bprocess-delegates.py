@@ -257,7 +257,7 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProxyProcessControllerDelegate
         # end handle tank instantiation mode
 
         raise EnvironmentError("Failed to initialize tank from any of the given context paths: %s\nErrors: %s" 
-                               % ', '.join(paths), '\n'.join(str(err) for err in errors))
+                               % (', '.join(paths), '\n'.join(str(err) for err in errors)))
 
     def pre_start(self, executable, env, args, cwd, resolve):
         """Place boot-stap environment variables, based on information received from the tank studio installation"""
