@@ -247,15 +247,17 @@ class TankEngineDelegate(TankDelegateCommonMixin, ProxyProcessControllerDelegate
 
             return sgtk.tank_from_entity(settings.entity_type, settings.entity_id), 'context_path_not_set'
         else:
+            errors = list()
             for path in paths:
                 try:
                     return sgtk.tank_from_path(path), path
-                except Exception:
-                    pass
+                except Exception as err:
+                    errors.append(err)
             # end for each path to try
         # end handle tank instantiation mode
 
-        raise EnvironmentError("Failed to initialize tank from any of the given context paths: %s" % ', '.join(paths))
+        raise EnvironmentError("Failed to initialize tank from any of the given context paths: %s\nErrors: %s" 
+                               % ', '.join(paths), '\n'.join(str(err) for err in errors))
 
     def pre_start(self, executable, env, args, cwd, resolve):
         """Place boot-stap environment variables, based on information received from the tank studio installation"""
