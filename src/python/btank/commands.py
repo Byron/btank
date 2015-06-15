@@ -77,6 +77,11 @@ class SetupTankProject(object):
         @param project a DictObject of all available project information, as returned from shotgun"""
         return project.name
 
+    def _make_project_directory(self, sg, log, project, project_roots):
+        """Called to assure a project directory is created. All project roots are given via
+        `project_roots`, which contains absolute project directories for all platforms"""
+        project_roots['%s_path' % platform_tank_map[sys.platform]].mkdir()
+
     ## -- End Subclass Interface -- @}
 
 
@@ -275,8 +280,7 @@ class SetupTankProject(object):
         # For the next step to work, tank really wants the project directory to exist. Fair enough
         tank_os_name = platform_tank_map[sys.platform]
         tank_os_root = Path(sanstr(params['config_path_%s' % tank_os_name]))
-        project_os_root = project_roots['%s_path' % tank_os_name]
-        project_os_root.mkdir()
+        self._make_project_directory(sg, log, project, project_roots)
 
         # nothing useful in return
         cmd = tank.get_command('setup_project')
