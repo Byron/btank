@@ -1,0 +1,6 @@
+git+https://github.com/Byron/bcore.git
+git+https://github.com/Byron/shotgun-events.git
+git+https://github.com/zzzeek/sqlalchemy.git
+git+https://github.com/shotgunsoftware/python-api.git
+git+https://github.com/Byron/bshotgun.git
+

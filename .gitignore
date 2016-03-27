@@ -2,5 +2,7 @@
 *~
 *.sublime-workspace
 doc/
+tk-core/
+.venv/
 build/
 pages/

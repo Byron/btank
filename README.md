@@ -14,8 +14,15 @@ For that reason, whenever *tank* is supposed to be used, *btank* is used to init
 [![Build Status](https://travis-ci.org/Byron/btank.svg?branch=master)](https://travis-ci.org/Byron/btank)
 ![under construction](https://raw.githubusercontent.com/Byron/bcore/master/src/images/wip.png)
 
+## Running Tests
+
+```bash
+# assure virtualenv exists and bootstrap everything there.
+# Can be called safely without redoing any work 
+source ./bin/venv.env
+nosetests src/python/btank/tests
+```
+
 ##  Credits
 
 * [python-patch](https://code.google.com/p/python-patch)
-
-
