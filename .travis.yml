@@ -6,6 +6,9 @@ python:
 install:
   - ./bin/bootstrap.sh
 script:
-  - 'export PYTHONPATH=$PWD/tk-core/python:$PWD/tk-core/tests/python && cd src/python/btank/tests && nosetests --with-coverage . utility/patch/test_patch.py'
+  - |
+    export PYTHONPATH=$PWD/tk-core/python:$PWD/tk-core/tests/python && 
+    cd src/python/btank/tests && 
+    nosetests --with-coverage . utility/patch/test_patch.py
 after_success:
   - coveralls

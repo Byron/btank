@@ -35,7 +35,7 @@ from btank.commands import *
 from btank.utility import link_bootstrapper
 from btank.schema import setup_project_schema
 
-# This is that ugly because plugins are never supposed to be imported directly, but always 
+# This is that ugly because plugins are never supposed to be imported directly, but always
 # through the plugin system. For tests cases, however, we need to work aroud that.
 # NOTE: might be worth making their names more pythonic ... 
 modname = 'btank-plugins.shotgun-events'
@@ -131,7 +131,7 @@ class CommandTests(TankTestCase):
         sg.set_entities([project, local_storage])
         sg.set_server_info(version_tuple=(4, 3, 9))
 
-        for dummy in ('PublishedFile','PublishedFileType', 'PublishedFileDependency'):
+        for dummy in ('PublishedFile', 'PublishedFileType', 'PublishedFileDependency'):
             sg.set_entity_schema(dummy, dict())
         # end for each dummmy
         sg.set_entity_schema('Project', dict((k, None) for k in project.keys()))
@@ -141,8 +141,8 @@ class CommandTests(TankTestCase):
 
         pb, wb = self._setup_bootstrapper_at(rw_dir, 'btank')
         config_uri = self._default_configuration_tree()
-        patch_installer = SetupProjectPatcher()
-        settings = DictObject({'bootstrapper' : {'host_path' : pb, # will work on all platforms in our case
+        # patch_installer = SetupProjectPatcher()
+        settings = DictObject({'bootstrapper' : {'host_path' : pb,  # will work on all platforms in our case
                                                  'posix_symlink_path' : pb, 
                                                  'windows_symlink_path' : wb,
                                                  'enforce_winlink_entry' : True,
@@ -175,5 +175,4 @@ class CommandTests(TankTestCase):
             assert err.errno == 17, "project directory can't be created as it exists"
         # end
 
-        
 # end class BasicTests

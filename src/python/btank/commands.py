@@ -21,7 +21,8 @@ from butility import (Path,
 
 from bkvstore import YAMLStreamSerializer
 import tank
-from tank.deploy.tank_commands import setup_project
+from tank.deploy.tank_commands import (setup_project, setup_project_params)
+from tank import pipelineconfig_utils
 import tank.platform.constants as constants
 
 from .utility import (platform_tank_map,
@@ -37,7 +38,8 @@ def sanstr(string):
         return string.decode(DEFAULT_ENCODING)
     return string
 
-class SetupTankProject(object):
+
+class SetupTankProject(setup_project.SetupProjectAction):
     """Should run a reaction to a newly created Shotgun project and sets it up to work with btank.
     As opposed to the default implementation, we will make it use our own, pre-existing shotgun connection,
     and use kvstore and environmental information.
@@ -96,35 +98,34 @@ class SetupTankProject(object):
         the special way of tank handling its bootstrapping is not required.
         So lets shut it off
         """
-        fun_name = '_get_current_core_file_location'
-        prev_fun = getattr(setup_project, fun_name, None)
+        fun_name = '_get_install_locations'
+        prev_fun = getattr(pipelineconfig_utils, fun_name, None)
         msg = "tank code base changed - monkey patcher needs a review !"
         assert prev_fun, msg
 
-        tk_installer_name = 'TankConfigInstaller'
-        prev_installer = getattr(setup_project, tk_installer_name, None)
-        assert prev_installer, msg
-
-        def return_locations():
+        tk_parameters_name = 'ProjectSetupParameters'
+        prev_parameters_type = getattr(setup_project, tk_parameters_name, None)
+        assert prev_parameters_type, msg
+        
+        tk_template_configuration_name = 'TemplateConfiguration'
+        prev_template_type = getattr(setup_project_params, tk_template_configuration_name, None)
+        assert prev_template_type, msg
+        
+        def return_locations(*args):
             # well, maybe not in order get the auto-installation going. No problem putting it back in though ... 
-            return dict((p, 'not required due to btank interception') for p in ('Windows', 'Darwin', 'Linux'))
+            return dict((p, 'not required due to btank interception') for p in ('win32', 'linux2', 'darwin'))
         # end
-
-        # The requirement of this installer is to dynamically adjust this information to match 
-        # whatever the user has configured as a data root
-        class tank_installer(prev_installer):
-
+        
+        class template_configuration(prev_template_type):
             def __init__(self, *args, **kwargs):
-                super(tank_installer, self).__init__(*args, **kwargs)
-                assert hasattr(self, '_cfg_folder'), msg
-                assert hasattr(self, '_roots_data'), msg
-                assert hasattr(prev_installer, '_process_config'), msg
-
+                super(template_configuration, self).__init__(*args, **kwargs)
+                assert hasattr(self, '_process_config'), msg
+                
             def _process_config(self, *args, **kwargs):
                 """rewrite the roots file and update the internal data field of the instance to match
                 Interestingly, and good for us, these default file paths that it expects are hard-coded in many places
                 This kind of forces it to be stable. This would feel better to have an official function to do it"""
-                cfg_folder, cfg_mode = super(tank_installer, self)._process_config(*args, **kwargs)
+                cfg_folder, cfg_mode = super(setup_project_parameters, self)._process_config(*args, **kwargs)
 
                 roots_file = Path(sanstr(cfg_folder)) / 'core' / 'roots.yml'
                 inst_storage_roots = storage_roots.copy()
@@ -141,6 +142,17 @@ class SetupTankProject(object):
                 # end handle exceptions
 
                 return cfg_folder, cfg_mode
+
+        # The requirement of this installer is to dynamically adjust this information to match 
+        # whatever the user has configured as a data root
+        class setup_project_parameters(prev_parameters_type):
+
+            def __init__(self, *args, **kwargs):
+                super(setup_project_parameters, self).__init__(*args, **kwargs)
+                assert hasattr(self, 'create_configuration'), msg
+                assert hasattr(self, '_cached_config_templates'), msg
+                
+
 
             def validate_roots(self, *args, **kwargs):
                 """As the original implementation will re-retrieve the root locations from shotgun, our 
@@ -160,10 +172,12 @@ class SetupTankProject(object):
         # end intaller
             
         setattr(setup_project, fun_name, return_locations)
-        setattr(setup_project, tk_installer_name, tank_installer)
+        setattr(setup_project, tk_parameters_name, setup_project_parameters)
+        setattr(setup_project_params, tk_template_configuration_name, template_configuration)
         yield
         setattr(setup_project, fun_name, prev_fun)
-        setattr(setup_project, tk_installer_name, prev_installer)
+        setattr(setup_project, tk_parameters_name, prev_parameters_type)
+        setattr(setup_project_params, tk_template_configuration_name, prev_parameters_type)
         # end do or undo
 
     def _resolve_local_storage_names(self, sg, log, names):
@@ -297,8 +311,8 @@ class SetupTankProject(object):
             # disable posix if smb must be assumed
             if settings.bootstrapper.assume_smb_share:
                 posix = False
-            link_bootstrapper(path, tank_os_root / ('btank'+ext), posix=posix, 
-                                                                  symlink_source=symlink_source, 
+            link_bootstrapper(path, tank_os_root / ('btank' + ext), posix=posix, 
+                                                                    symlink_source=symlink_source, 
                                                   enforce_winlink_entry=settings.bootstrapper.enforce_winlink_entry)
         # end for each os name
 
