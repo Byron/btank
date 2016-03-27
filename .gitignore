@@ -6,3 +6,4 @@ tk-core/
 .venv/
 build/
 pages/
+.coverage
